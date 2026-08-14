@@ -9,15 +9,17 @@ export default function TabLayout() {
   return (
     <NativeTabs
       tintColor={Colors[colorScheme].tint}
-      rippleColor={Colors[colorScheme].border}
+      backgroundColor={Colors[colorScheme].background}
+      indicatorColor={Colors[colorScheme].surfaceContainer}
+      rippleColor="transparent"
     >
       <NativeTabs.Trigger name="apps">
-        <NativeTabs.Trigger.Label>Applications</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Apps</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon md="apps" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Engine</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon md="settings" />
+        <NativeTabs.Trigger.Label>Alarm</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon md="alarm" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

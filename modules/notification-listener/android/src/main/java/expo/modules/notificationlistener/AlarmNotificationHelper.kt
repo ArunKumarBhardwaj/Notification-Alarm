@@ -11,7 +11,7 @@ import android.os.Build
 object AlarmNotificationHelper {
     const val CHANNEL_ID = "alertify_alarm_channel"
     const val NOTIFICATION_ID = 9999
-    const val ACTION_DISMISS_ALARM = "com.arun_bhardwaj.Alertify.ACTION_DISMISS_ALARM"
+    const val ACTION_DISMISS_ALARM = "com.arunbhardwaj.notificationalarm.ACTION_DISMISS_ALARM"
 
     fun buildDismissNotification(context: Context): Notification {
         val notificationManager =
@@ -20,7 +20,7 @@ object AlarmNotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Alertify Alarms",
+                "Notification Alarms",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Channel for active emergency sirens"
@@ -61,8 +61,8 @@ object AlarmNotificationHelper {
         }
 
         return builder
-            .setContentTitle("Alertify Siren Ringing")
-            .setContentText("An emergency notification matched your monitoring list.")
+            .setContentTitle("Notification Alarm ringing")
+            .setContentText("A watched app sent a notification. Dismiss to stop the alarm.")
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setOngoing(true)
             .setAutoCancel(false)

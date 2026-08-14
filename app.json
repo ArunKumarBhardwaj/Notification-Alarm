@@ -1,29 +1,39 @@
 {
   "expo": {
-    "name": "Alertify",
+    "name": "Notification Alarm",
     "slug": "Alertify",
     "version": "1.0.0",
+    "description": "Loud alarm when a notification arrives so you never miss WhatsApp, Slack, or any app you choose.",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/237338fd-6927-45e8-9a40-6b386738e464"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "alertify",
+    "scheme": "notificationalarm",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.arun-bhardwaj.Alertify"
+      "bundleIdentifier": "com.arunbhardwaj.notificationalarm"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#141416",
+        "backgroundColor": "#C2410C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.arun_bhardwaj.Alertify",
+      "package": "com.arunbhardwaj.notificationalarm",
       "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ]
+      ],
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -37,9 +47,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#FFF8F5",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#14100E"
           }
         }
       ],
@@ -48,6 +58,7 @@
       "expo-web-browser",
       "expo-status-bar",
       "expo-asset",
+      "expo-updates",
       "./plugins/withAndroidAppVisibility.js"
     ],
     "experiments": {

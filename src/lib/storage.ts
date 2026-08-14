@@ -1,5 +1,11 @@
 import { createMMKV } from 'react-native-mmkv';
-import { syncPref, copyAlarmSound, clearNativeAlarmSound } from '../modules/notification-listener';
+import {
+  syncPref,
+  copyAlarmSound,
+  clearNativeAlarmSound,
+  getNativeHistory,
+  seedNativeHistory,
+} from '../../modules/notification-listener';
 
 export const storage = createMMKV();
 
@@ -8,9 +14,9 @@ export const StorageKeys = {
   HISTORY: 'alertify_history',
   ALARM_SOUND_URI: 'alertify_alarm_sound_uri',
   MONITORING_ENABLED: 'alertify_monitoring_enabled',
+  ONBOARDED: 'alertify_onboarded',
 };
 
-// Sync key/value to Android SharedPreferences so Kotlin service can read when app is killed
 const syncToNative = (key: string, value: string) => {
   try { syncPref(key, value); } catch {}
 };
@@ -56,8 +62,15 @@ export const saveAlarmSoundFromPicker = (pickerUri: string): string | null => {
   }
 };
 
+export const hasCompletedOnboarding = (): boolean => {
+  return storage.getString(StorageKeys.ONBOARDED) === 'true';
+};
+
+export const completeOnboarding = () => {
+  storage.set(StorageKeys.ONBOARDED, 'true');
+};
+
 export const isMonitoringEnabled = (): boolean => {
-  // Default to true if never set
   const val = storage.getString(StorageKeys.MONITORING_ENABLED);
   return val !== 'false';
 };
@@ -76,23 +89,41 @@ export interface HistoryItem {
   timestamp: number;
 }
 
+function normalizeHistory(raw: unknown[]): HistoryItem[] {
+  return raw.map((item) => {
+    const row = (item ?? {}) as Record<string, unknown>;
+    return {
+      id: String(row.id ?? ''),
+      title: String(row.title ?? ''),
+      text: String(row.text ?? ''),
+      packageName: String(row.packageName ?? ''),
+      timestamp: Number(row.timestamp ?? 0),
+    };
+  });
+}
+
 export const getHistory = (): HistoryItem[] => {
+  try {
+    const native = getNativeHistory();
+    if (Array.isArray(native) && native.length > 0) {
+      return normalizeHistory(native);
+    }
+  } catch {
+    // Fall through to MMKV for older installs.
+  }
+
   const data = storage.getString(StorageKeys.HISTORY);
   return data ? JSON.parse(data) : [];
 };
 
-export const saveHistory = (history: HistoryItem[]) => {
-  storage.set(StorageKeys.HISTORY, JSON.stringify(history));
+export const migrateHistoryIfNeeded = () => {
+  try {
+    const native = getNativeHistory();
+    if (Array.isArray(native) && native.length > 0) return;
+    const data = storage.getString(StorageKeys.HISTORY);
+    if (data) seedNativeHistory(data);
+  } catch {
+    // Ignore if native module is unavailable.
+  }
 };
 
-export const addHistoryItem = (item: Omit<HistoryItem, 'id' | 'timestamp'>) => {
-  const history = getHistory();
-  const newItem: HistoryItem = {
-    ...item,
-    id: Math.random().toString(36).substr(2, 9),
-    timestamp: Date.now(),
-  };
-  const updated = [newItem, ...history].slice(0, 50);
-  saveHistory(updated);
-  return updated;
-};

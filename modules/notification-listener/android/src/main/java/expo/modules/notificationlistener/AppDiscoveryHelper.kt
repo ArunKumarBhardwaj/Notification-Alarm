@@ -6,13 +6,18 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
-import android.util.Base64
-import java.io.ByteArrayOutputStream
+import android.graphics.drawable.Drawable
+import org.json.JSONArray
+import java.io.File
+import java.io.FileOutputStream
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 object AppDiscoveryHelper {
     private const val PREFS = "AlertifyPrefs"
     private const val RECENT_KEY = "recent_notification_apps"
     private const val MAX_RECENT = 30
+    private const val ICON_SIZE = 96
 
     fun trackRecentApp(context: Context, packageName: String) {
         if (packageName == context.packageName) return
@@ -51,6 +56,67 @@ object AppDiscoveryHelper {
         return result
     }
 
+    fun getAppIconPath(context: Context, packageName: String): String? {
+        val file = iconFile(context, packageName) ?: return null
+        if (file.exists() && file.length() > 0L) {
+            return "file://${file.absolutePath}"
+        }
+
+        return try {
+            val icon = context.packageManager.getApplicationIcon(packageName)
+            val bitmap = drawableToBitmap(icon, ICON_SIZE)
+            // Write to a temp file first so a killed process can never leave a
+            // half-written PNG that later reads would treat as cached.
+            val temp = File(file.parentFile, "${file.name}.tmp")
+            FileOutputStream(temp).use { output ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 80, output)
+            }
+            if (bitmap != (icon as? BitmapDrawable)?.bitmap) {
+                bitmap.recycle()
+            }
+            if (!temp.renameTo(file)) {
+                temp.delete()
+                return null
+            }
+            "file://${file.absolutePath}"
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** Resolves many icons in one call so the list does not make a bridge call per row. */
+    fun getAppIconPaths(context: Context, packageNames: List<String>): Map<String, String> {
+        val packages = packageNames.distinct().filter { it.isNotEmpty() }
+        if (packages.isEmpty()) return emptyMap()
+
+        val threads = Runtime.getRuntime().availableProcessors().coerceIn(1, 4)
+        val pool = Executors.newFixedThreadPool(threads)
+        return try {
+            val tasks = packages.map { packageName ->
+                Callable { packageName to (getAppIconPath(context, packageName) ?: "") }
+            }
+            pool.invokeAll(tasks)
+                .mapNotNull { future -> runCatching { future.get() }.getOrNull() }
+                .filter { (_, path) -> path.isNotEmpty() }
+                .toMap()
+        } catch (_: Exception) {
+            emptyMap()
+        } finally {
+            pool.shutdown()
+        }
+    }
+
+    private fun iconFile(context: Context, packageName: String): File? {
+        val dir = File(context.cacheDir, "app_icons")
+        if (!dir.exists() && !dir.mkdirs()) return null
+        return File(dir, packageName.replace('.', '_') + ".png")
+    }
+
+    private fun cachedIconPath(context: Context, packageName: String): String? {
+        val file = iconFile(context, packageName) ?: return null
+        return if (file.exists() && file.length() > 0L) "file://${file.absolutePath}" else null
+    }
+
     private fun addApp(
         context: Context,
         pm: PackageManager,
@@ -64,53 +130,40 @@ object AppDiscoveryHelper {
         try {
             val appInfo = pm.getApplicationInfo(packageName, 0)
             seenPackages.add(packageName)
-
-            val name = appInfo.loadLabel(pm).toString()
-            val appMap = mutableMapOf<String, Any>(
+            val entry = mutableMapOf<String, Any>(
                 "packageName" to packageName,
-                "name" to name
+                "name" to appInfo.loadLabel(pm).toString()
             )
-            val iconBase64 = getAppIconAsBase64(pm, packageName)
-            if (iconBase64 != null) {
-                appMap["icon"] = iconBase64
-            }
-            result.add(appMap)
+            cachedIconPath(context, packageName)?.let { entry["icon"] = it }
+            result.add(entry)
         } catch (_: PackageManager.NameNotFoundException) {
             // Package no longer installed or not visible to the app.
         }
     }
 
-    private fun getAppIconAsBase64(pm: PackageManager, packageName: String): String? {
-        return try {
-            val icon = pm.getApplicationIcon(packageName)
-            val bitmap = if (icon is BitmapDrawable) {
-                icon.bitmap
-            } else {
-                val width = icon.intrinsicWidth.coerceAtLeast(1)
-                val height = icon.intrinsicHeight.coerceAtLeast(1)
-                val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                val canvas = Canvas(bmp)
-                icon.setBounds(0, 0, canvas.width, canvas.height)
-                icon.draw(canvas)
-                bmp
-            }
-            val outputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            val bytes = outputStream.toByteArray()
-            "data:image/png;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
-        } catch (_: Exception) {
-            null
+    private fun drawableToBitmap(icon: Drawable, size: Int): Bitmap {
+        if (icon is BitmapDrawable && icon.bitmap != null) {
+            return Bitmap.createScaledBitmap(icon.bitmap, size, size, true)
         }
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        icon.setBounds(0, 0, size, size)
+        icon.draw(canvas)
+        return bmp
     }
 
     fun parseJsonArray(json: String): List<String> {
-        val clean = json.trim().removePrefix("[").removeSuffix("]")
-        if (clean.isEmpty()) return emptyList()
-        return clean.split(",").map { it.trim().removeSurrounding("\"").removeSurrounding("'") }
+        return try {
+            val array = JSONArray(json)
+            List(array.length()) { i -> array.optString(i) }.filter { it.isNotEmpty() }
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     fun toJsonArray(items: List<String>): String {
-        if (items.isEmpty()) return "[]"
-        return items.joinToString(prefix = "[", postfix = "]", separator = ",") { "\"$it\"" }
+        val array = JSONArray()
+        items.forEach { array.put(it) }
+        return array.toString()
     }
 }

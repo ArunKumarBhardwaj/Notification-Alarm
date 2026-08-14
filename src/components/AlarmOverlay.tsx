@@ -20,9 +20,9 @@ export function AlarmOverlay() {
           <IconSymbol name="warning" size={40} color={colors.danger} />
         </View>
         
-        <Text style={[styles.title, { color: colors.text }]}>EMERGENCY ALERT</Text>
+        <Text style={[styles.title, { color: colors.text }]}>NOTIFICATION ALARM</Text>
         <Text style={[styles.desc, { color: colors.icon }]}>
-          A critical notification was detected. The alarm will continue until dismissed.
+          A watched app sent a notification. The alarm will keep ringing until you dismiss it.
         </Text>
 
         <Pressable 

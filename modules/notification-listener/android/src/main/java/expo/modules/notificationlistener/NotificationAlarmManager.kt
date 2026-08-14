@@ -3,6 +3,8 @@ package expo.modules.notificationlistener
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -26,13 +28,27 @@ object NotificationAlarmManager {
         if (isPlaying) return
         isPlaying = true
         Log.d(TAG, "Requesting alarm playback. Sound URI: $soundUriString")
-        AlarmForegroundService.start(context, soundUriString)
+        try {
+            AlarmForegroundService.start(context, soundUriString)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start alarm foreground service", e)
+            onStartFailed()
+        }
     }
 
     fun startPlayback(context: Context, soundUriString: String?) {
         Log.d(TAG, "Starting native alarm playback. Sound URI: $soundUriString")
+        stopAudioAndVibration()
+        isPlaying = true
         startVibration(context)
         startAudio(context, soundUriString)
+        emitAlarmState(true)
+    }
+
+    fun onStartFailed() {
+        isPlaying = false
+        stopAudioAndVibration()
+        emitAlarmState(false)
     }
 
     private fun startVibration(context: Context) {
@@ -55,40 +71,78 @@ object NotificationAlarmManager {
     }
 
     private fun startAudio(context: Context, soundUriString: String?) {
-        val resolvedPath = resolveSoundPath(context, soundUriString)
-        if (resolvedPath.isNullOrEmpty()) {
-            Log.d(TAG, "No alarm sound configured — vibrating only")
-            return
-        }
-
         try {
-            mediaPlayer = MediaPlayer().apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ALARM)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build()
-                    )
-                } else {
-                    @Suppress("DEPRECATION")
-                    setAudioStreamType(android.media.AudioManager.STREAM_ALARM)
-                }
+            val player = MediaPlayer()
+            applyAlarmAttributes(player)
 
-                val file = File(resolvedPath)
-                if (file.exists()) {
-                    setDataSource(file.absolutePath)
-                } else {
-                    setDataSource(context, android.net.Uri.parse(resolvedPath))
+            var activePlayer = player
+            if (!loadCustomSound(context, player, soundUriString)) {
+                try {
+                    player.release()
+                } catch (_: Exception) {
+                    // Ignore and rebuild.
                 }
-
-                isLooping = true
-                prepare()
-                start()
+                activePlayer = MediaPlayer()
+                applyAlarmAttributes(activePlayer)
+                val defaultUri = defaultAlarmUri()
+                if (defaultUri == null) {
+                    Log.d(TAG, "No alarm sound available — vibrating only")
+                    activePlayer.release()
+                    return
+                }
+                activePlayer.setDataSource(context, defaultUri)
             }
+
+            activePlayer.isLooping = true
+            activePlayer.prepare()
+            activePlayer.start()
+            mediaPlayer = activePlayer
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start native audio playback", e)
         }
+    }
+
+    private fun loadCustomSound(context: Context, player: MediaPlayer, soundUriString: String?): Boolean {
+        val resolvedPath = resolveSoundPath(context, soundUriString)
+        if (resolvedPath.isNullOrEmpty()) return false
+
+        return try {
+            val file = File(resolvedPath)
+            if (file.exists()) {
+                player.setDataSource(file.absolutePath)
+            } else {
+                player.setDataSource(context, Uri.parse(resolvedPath))
+            }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Custom alarm sound failed, falling back to default", e)
+            try {
+                player.reset()
+            } catch (_: Exception) {
+                // Player will be rebuilt by caller if needed.
+            }
+            false
+        }
+    }
+
+    private fun applyAlarmAttributes(player: MediaPlayer) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            player.setAudioStreamType(android.media.AudioManager.STREAM_ALARM)
+        }
+    }
+
+    private fun defaultAlarmUri(): Uri? {
+        return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
     }
 
     private fun resolveSoundPath(context: Context, soundUriString: String?): String? {
@@ -108,12 +162,17 @@ object NotificationAlarmManager {
         isPlaying = false
         Log.d(TAG, "Stopping native alarm")
         stopAudioAndVibration()
+        emitAlarmState(false)
         AlarmForegroundService.stop(context)
     }
 
     fun onServiceStopped() {
+        val wasPlaying = isPlaying
         isPlaying = false
         stopAudioAndVibration()
+        if (wasPlaying) {
+            emitAlarmState(false)
+        }
     }
 
     fun stopAudioAndVibration() {
@@ -130,6 +189,14 @@ object NotificationAlarmManager {
             vibrator = null
         } catch (e: Exception) {
             Log.e(TAG, "Error cancelling vibrator", e)
+        }
+    }
+
+    private fun emitAlarmState(playing: Boolean) {
+        try {
+            listenerModule?.sendEvent("onAlarmStateChanged", mapOf("playing" to playing))
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to emit alarm state", e)
         }
     }
 }

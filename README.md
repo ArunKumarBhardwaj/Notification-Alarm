@@ -1,48 +1,48 @@
-# 🚨 Alertify
+# Notification Alarm
 
-Alertify is a high-performance emergency notification pager built with React Native and Native Kotlin. It transforms your Android device into a reliable alerting tool that ensures you never miss critical notifications from your selected applications.
+Notification Alarm is an Android pager: when a notification arrives from an app you choose, it rings a loud alarm so you don’t miss it — even if the app is killed.
 
-## 🚀 Key Features
+## Key Features
 
-- **Killed-Mode Reliability**: Unlike standard apps, Alertify uses a native Android `NotificationListenerService`. This ensures that even if the app is fully closed or killed by the OS, the siren and vibration will still trigger.
-- **Native Siren Engine**: Built with Kotlin's `MediaPlayer` for low-latency, high-volume emergency sounds that work independently of the React Native bridge.
-- **Persistent Alarms**: Once triggered, the alarm continues to loop with a custom vibration pattern until manually dismissed via the in-app overlay or the persistent system notification.
-- **Custom Sound Picker**: Select any audio file from your device to use as your emergency alert sound.
-- **App Filtering**: Choose exactly which apps (e.g., WhatsApp, PagerDuty, Slack) are allowed to trigger the alarm.
-- **Modern UI**: A sleek, high-performance interface built with `@legendapp/list` for smooth scrolling and Material Design aesthetics.
+- **Killed-mode reliability**: A native Android `NotificationListenerService` starts the siren even if the Expo process is closed.
+- **Native siren engine**: Kotlin `MediaPlayer` on the alarm stream. Defaults to the phone’s alarm ringtone; a custom file is optional.
+- **Persistent alarms**: Loops with vibration until dismissed from the in-app overlay or the system notification.
+- **Custom sound picker**: Select any audio file from the device.
+- **App filtering**: Choose which apps (WhatsApp, PagerDuty, Slack, etc.) can trigger the alarm.
+- **Alert history**: Recorded in native SharedPreferences so killed-mode alerts still show up in Engine.
 
-## 🛠️ Technical Stack
+## Technical Stack
 
-- **Framework**: Expo (SDK 55) / React Native
-- **Native Logic**: Kotlin (NotificationListenerService, BroadcastReceivers)
-- **Audio**: `expo-audio` (JS) + `MediaPlayer` (Kotlin)
-- **State Management**: `react-native-mmkv` + Native `SharedPreferences` sync
-- **Styling**: Vanilla CSS-in-JS with a Premium Dark Theme
+- **Framework**: Expo SDK 57 / React Native 0.86
+- **Updates**: EAS Update (`expo-updates`) for JS/asset pushes to internal testers
+- **Native logic**: Kotlin (`NotificationListenerService`, foreground service, BroadcastReceiver)
+- **Audio**: `MediaPlayer` with `USAGE_ALARM` (no `expo-audio`)
+- **State**: `react-native-mmkv` synced to native `SharedPreferences`
+- **Styling**: StyleSheet with light/dark theme
 
-## 📦 Installation & Setup
+## Installation & Setup
 
-1. **Clone the repo**:
+1. Clone the repo:
    ```bash
    git clone https://github.com/ArunKumarBhardwaj/Alertify.git
    cd Alertify
    ```
 
-2. **Install dependencies**:
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-3. **Build and Run**:
-   Since the app uses custom native modules, you must run a native build:
+3. Build and run (custom native modules require a native build):
    ```bash
    npx expo run:android
    ```
 
-## 🔐 Important Permissions
+## Important Permissions
 
-To function correctly, Alertify requires:
-- **Notification Access**: Required to detect incoming messages from your chosen apps.
-- **Battery Optimization Exemption**: To ensure the service stays alive, set the app battery usage to "Unrestricted" in Android settings.
+- **Notification access**: Detect incoming notifications from selected apps.
+- **Post notifications** (Android 13+): Show the dismiss-alarm system notification.
+- **Battery unrestricted**: Keep the listener alive after the app is killed. Use **Allow Unrestricted** on the Engine screen, or set battery usage to Unrestricted in system settings.
 
 ---
-Built with ❤️ for reliability.
+Built for reliability.

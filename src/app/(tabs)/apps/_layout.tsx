@@ -2,7 +2,7 @@ import { Stack } from 'expo-router/stack';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export default function SettingsLayout() {
+export default function AppsLayout() {
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[colorScheme];
 
@@ -11,15 +11,17 @@ export default function SettingsLayout() {
       screenOptions={{
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { fontWeight: 'bold' },
+        headerTintColor: colors.text,
+        headerTitleStyle: { fontWeight: '600', color: colors.text },
         headerLargeTitle: true,
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen 
-        name="index" 
-        options={{ 
-          title: 'Alarm Settings',
-        }} 
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Apps',
+        }}
       />
     </Stack>
   );

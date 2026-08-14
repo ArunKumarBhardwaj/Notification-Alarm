@@ -33,6 +33,8 @@ class NotificationListenerService : NotificationListenerService() {
 
         Log.d(TAG, "Notification received from: $packageName, title: $title, text: $text")
 
+        AlertHistoryStore.add(context, title, text, packageName)
+
         NotificationAlarmManager.listenerModule?.let { module ->
             try {
                 module.sendEvent(

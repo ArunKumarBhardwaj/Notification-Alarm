@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import {
-  useNotificationListener,
   hasPermission,
   stopNativeAlarm,
   isNativeAlarmPlaying,
-} from '../modules/notification-listener';
-import { getSelectedApps, addHistoryItem, isMonitoringEnabled } from '../lib/storage';
+  useAlarmStateListener,
+} from '../../modules/notification-listener';
+import { migrateHistoryIfNeeded } from '../lib/storage';
 
 type AlarmContextValue = {
   permission: boolean;
@@ -33,6 +33,7 @@ export function AlarmProvider({ children }: { children: ReactNode }) {
   const [isRinging, setIsRinging] = useState(false);
 
   useEffect(() => {
+    migrateHistoryIfNeeded();
     setPermission(hasPermission());
     setIsRinging(isNativeAlarmPlaying());
 
@@ -43,29 +44,13 @@ export function AlarmProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const interval = setInterval(() => {
-      setIsRinging(isNativeAlarmPlaying());
-    }, 400);
-
     return () => {
       appStateSub.remove();
-      clearInterval(interval);
     };
   }, []);
 
-  useNotificationListener((event) => {
-    if (!isMonitoringEnabled()) return;
-
-    const selectedApps = getSelectedApps();
-    if (!selectedApps.includes(event.packageName)) return;
-
-    addHistoryItem({
-      title: event.title,
-      text: event.text,
-      packageName: event.packageName,
-    });
-
-    setIsRinging(isNativeAlarmPlaying());
+  useAlarmStateListener((playing) => {
+    setIsRinging(playing);
   });
 
   return (
