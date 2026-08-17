@@ -124,6 +124,12 @@ class NotificationListenerModule : Module() {
       true
     }
 
+    Function("clearNativeHistory") {
+      val context = appContext.reactContext ?: return@Function false
+      AlertHistoryStore.clear(context)
+      true
+    }
+
     AsyncFunction("getInstalledApps") {
       val context = appContext.reactContext ?: return@AsyncFunction emptyList<Map<String, Any>>()
       AppDiscoveryHelper.getAllSelectableApps(context)

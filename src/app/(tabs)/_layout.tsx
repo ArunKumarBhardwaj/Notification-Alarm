@@ -1,26 +1,27 @@
+import Tabs from 'expo-router/js-tabs';
+import React from 'react';
+
+import { AppTabBar } from '@/components/app-tab-bar';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import React from 'react';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const palette = Colors[colorScheme];
 
   return (
-    <NativeTabs
-      tintColor={Colors[colorScheme].tint}
-      backgroundColor={Colors[colorScheme].background}
-      indicatorColor={Colors[colorScheme].surfaceContainer}
-      rippleColor="transparent"
+    <Tabs
+      tabBar={(props) => <AppTabBar {...props} />}
+      screenOptions={{
+        headerShown: false,
+        sceneStyle: { backgroundColor: palette.background },
+      }}
     >
-      <NativeTabs.Trigger name="apps">
-        <NativeTabs.Trigger.Label>Apps</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon md="apps" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Alarm</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon md="alarm" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+      {/* Redirect route: it has no icon, so the custom bar skips it. */}
+      <Tabs.Screen name="index" options={{ href: null }} />
+      <Tabs.Screen name="apps" options={{ title: 'Apps' }} />
+      <Tabs.Screen name="alarm" options={{ title: 'Alarm' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+    </Tabs>
   );
 }

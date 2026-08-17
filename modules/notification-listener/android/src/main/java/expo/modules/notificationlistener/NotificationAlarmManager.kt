@@ -40,7 +40,9 @@ object NotificationAlarmManager {
         Log.d(TAG, "Starting native alarm playback. Sound URI: $soundUriString")
         stopAudioAndVibration()
         isPlaying = true
-        startVibration(context)
+        val prefs = context.getSharedPreferences("AlertifyPrefs", Context.MODE_PRIVATE)
+        val vibrationEnabled = prefs.getString("vibration_enabled", "true") == "true"
+        if (vibrationEnabled) startVibration(context)
         startAudio(context, soundUriString)
         emitAlarmState(true)
     }

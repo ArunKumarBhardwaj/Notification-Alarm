@@ -23,6 +23,7 @@ declare class NotificationListenerModule extends NativeModule<NotificationListen
   clearAlarmSound(): void;
   getNativeHistory(): NativeHistoryItem[];
   seedNativeHistory(itemsJson: string): void;
+  clearNativeHistory(): void;
 }
 
 const fallback: NotificationListenerModule = {
@@ -43,6 +44,7 @@ const fallback: NotificationListenerModule = {
   clearAlarmSound: () => {},
   getNativeHistory: () => [],
   seedNativeHistory: () => {},
+  clearNativeHistory: () => {},
   addListener: () => ({ remove: () => {} }),
   removeAllListeners: () => {},
 } as unknown as NotificationListenerModule;

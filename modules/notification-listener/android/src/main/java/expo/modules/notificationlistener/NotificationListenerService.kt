@@ -4,6 +4,7 @@ import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import java.util.Calendar
 
 class NotificationListenerService : NotificationListenerService() {
     companion object {
@@ -48,6 +49,15 @@ class NotificationListenerService : NotificationListenerService() {
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send event to JS", e)
             }
+        }
+
+        val quietHoursEnabled = prefs.getString("quiet_hours_enabled", "false") == "true"
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        // Quiet hours run overnight from 22:00 through 06:59. We still retain
+        // the event in history, but deliberately suppress the siren.
+        if (quietHoursEnabled && (hour >= 22 || hour < 7)) {
+            Log.d(TAG, "Alarm suppressed during quiet hours")
+            return
         }
 
         val soundUri = prefs.getString("alarm_sound_uri", null)

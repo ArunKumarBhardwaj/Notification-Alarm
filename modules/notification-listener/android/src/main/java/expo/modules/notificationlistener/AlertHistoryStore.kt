@@ -55,6 +55,14 @@ object AlertHistoryStore {
         prefs.edit().putString(KEY, parsed.toString()).apply()
     }
 
+    @Synchronized
+    fun clear(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY, "[]")
+            .apply()
+    }
+
     private fun parseArray(raw: String?): JSONArray {
         return try {
             JSONArray(raw?.ifBlank { "[]" } ?: "[]")

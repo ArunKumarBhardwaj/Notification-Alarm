@@ -26,9 +26,24 @@
     }
   },
   "submit": {
+    "internal": {
+      "android": {
+        "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    },
+    "closed": {
+      "android": {
+        "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
+        "track": "alpha",
+        "releaseStatus": "draft"
+      }
+    },
     "production": {
       "android": {
-        "track": "internal",
+        "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
+        "track": "production",
         "releaseStatus": "draft"
       }
     }

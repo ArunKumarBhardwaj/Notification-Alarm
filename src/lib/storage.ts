@@ -5,6 +5,7 @@ import {
   clearNativeAlarmSound,
   getNativeHistory,
   seedNativeHistory,
+  clearNativeHistory,
 } from '../../modules/notification-listener';
 
 export const storage = createMMKV();
@@ -15,6 +16,8 @@ export const StorageKeys = {
   ALARM_SOUND_URI: 'alertify_alarm_sound_uri',
   MONITORING_ENABLED: 'alertify_monitoring_enabled',
   ONBOARDED: 'alertify_onboarded',
+  QUIET_HOURS_ENABLED: 'alertify_quiet_hours_enabled',
+  VIBRATION_ENABLED: 'alertify_vibration_enabled',
 };
 
 const syncToNative = (key: string, value: string) => {
@@ -81,6 +84,26 @@ export const setMonitoringEnabled = (enabled: boolean) => {
   syncToNative('monitoring_enabled', val);
 };
 
+export const isQuietHoursEnabled = (): boolean => {
+  return storage.getString(StorageKeys.QUIET_HOURS_ENABLED) === 'true';
+};
+
+export const setQuietHoursEnabled = (enabled: boolean) => {
+  const val = enabled ? 'true' : 'false';
+  storage.set(StorageKeys.QUIET_HOURS_ENABLED, val);
+  syncToNative('quiet_hours_enabled', val);
+};
+
+export const isVibrationEnabled = (): boolean => {
+  return storage.getString(StorageKeys.VIBRATION_ENABLED) !== 'false';
+};
+
+export const setVibrationEnabled = (enabled: boolean) => {
+  const val = enabled ? 'true' : 'false';
+  storage.set(StorageKeys.VIBRATION_ENABLED, val);
+  syncToNative('vibration_enabled', val);
+};
+
 export interface HistoryItem {
   id: string;
   title: string;
@@ -122,6 +145,15 @@ export const migrateHistoryIfNeeded = () => {
     if (Array.isArray(native) && native.length > 0) return;
     const data = storage.getString(StorageKeys.HISTORY);
     if (data) seedNativeHistory(data);
+  } catch {
+    // Ignore if native module is unavailable.
+  }
+};
+
+export const clearHistory = () => {
+  storage.remove(StorageKeys.HISTORY);
+  try {
+    clearNativeHistory();
   } catch {
     // Ignore if native module is unavailable.
   }

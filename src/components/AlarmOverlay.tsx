@@ -1,35 +1,89 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Motion, Radius, Space, Type } from '@/constants/theme';
 import { useAlarm } from '@/hooks/alarm-provider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import React, { useEffect, useState } from 'react';
+import { Animated as RNAnimated, Pressable, StyleSheet, Text } from 'react-native';
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import { IconSymbol } from './ui/icon-symbol';
+
+function AlarmIcon({ color, reduceMotion }: { color: string; reduceMotion: boolean }) {
+  'use no memo';
+  const [scale] = useState(() => new RNAnimated.Value(1));
+
+  useEffect(() => {
+    if (reduceMotion) {
+      scale.setValue(1);
+      return;
+    }
+    const loop = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(scale, {
+          toValue: 1.06,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        RNAnimated.timing(scale, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [reduceMotion, scale]);
+
+  return (
+    <RNAnimated.View
+      style={[
+        styles.iconContainer,
+        { backgroundColor: `${color}22`, transform: [{ scale }] },
+      ]}
+    >
+      <IconSymbol name="exclamationmark.triangle.fill" size={40} color={color} />
+    </RNAnimated.View>
+  );
+}
 
 export function AlarmOverlay() {
   const { isRinging, stopSiren } = useAlarm();
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[colorScheme];
+  const reduceMotion = useReducedMotion();
 
   if (!isRinging) return null;
 
   return (
-    <Animated.View entering={FadeIn} style={styles.overlay}>
-      <Animated.View entering={SlideInUp} style={[styles.modal, { backgroundColor: colors.surface, borderColor: colors.danger }]}>
-        <View style={[styles.iconContainer, { backgroundColor: colors.danger + '20' }]}>
-          <IconSymbol name="warning" size={40} color={colors.danger} />
-        </View>
-        
-        <Text style={[styles.title, { color: colors.text }]}>NOTIFICATION ALARM</Text>
-        <Text style={[styles.desc, { color: colors.icon }]}>
+    <Animated.View
+      entering={reduceMotion ? undefined : FadeIn.duration(Motion.interaction)}
+      style={styles.overlay}
+    >
+      <Animated.View
+        entering={reduceMotion ? undefined : SlideInUp.duration(Motion.onboarding)}
+        style={[
+          styles.modal,
+          { backgroundColor: colors.surface, borderColor: colors.danger },
+        ]}
+      >
+        <AlarmIcon color={colors.danger} reduceMotion={reduceMotion} />
+
+        <Text style={[styles.title, { color: colors.text }]}>Alarm ringing</Text>
+        <Text style={[styles.desc, { color: colors.muted }]}>
           A watched app sent a notification. The alarm will keep ringing until you dismiss it.
         </Text>
 
-        <Pressable 
-          style={[styles.dismissBtn, { backgroundColor: colors.danger }]} 
+        <Pressable
+          style={({ pressed }) => [
+            styles.dismissBtn,
+            { backgroundColor: colors.danger },
+            pressed && !reduceMotion ? styles.dismissPressed : null,
+          ]}
           onPress={stopSiren}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss alarm"
         >
-          <Text style={styles.dismissText}>DISMISS ALARM</Text>
+          <Text style={[styles.dismissText, { color: colors.onPrimary }]}>Dismiss alarm</Text>
         </Pressable>
       </Animated.View>
     </Animated.View>
@@ -39,23 +93,19 @@ export function AlarmOverlay() {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(20, 16, 14, 0.72)',
     zIndex: 9999,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: Space.xl,
   },
   modal: {
     width: '100%',
-    padding: 32,
-    borderRadius: 24,
+    padding: Space.xxl,
+    borderRadius: Radius.xl,
     borderWidth: 2,
     alignItems: 'center',
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
+    boxShadow: '0 10px 24px rgba(43, 22, 12, 0.28)',
   },
   iconContainer: {
     width: 80,
@@ -63,33 +113,29 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Space.xl,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '900',
-    marginBottom: 12,
-    letterSpacing: 1,
+    ...Type.screenTitle,
+    marginBottom: Space.md,
+    textAlign: 'center',
   },
   desc: {
-    fontSize: 16,
+    ...Type.body,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
-    fontWeight: '500',
+    marginBottom: Space.xxl,
   },
   dismissBtn: {
     width: '100%',
-    height: 64,
-    borderRadius: 16,
+    minHeight: 56,
+    borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
+  },
+  dismissPressed: {
+    transform: [{ scale: 0.98 }],
   },
   dismissText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
+    ...Type.cta,
   },
 });

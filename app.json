@@ -47,9 +47,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FFF8F5",
+          "backgroundColor": "#F6F2EE",
           "dark": {
-            "backgroundColor": "#14100E"
+            "backgroundColor": "#100D0C"
           }
         }
       ],
@@ -59,7 +59,16 @@
       "expo-status-bar",
       "expo-asset",
       "expo-updates",
-      "./plugins/withAndroidAppVisibility.js"
+      "./plugins/withAndroidAppVisibility.js",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

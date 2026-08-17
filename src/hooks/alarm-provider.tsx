@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import {
   hasPermission,
@@ -20,7 +20,7 @@ const AlarmContext = createContext<AlarmContextValue>({
   stopSiren: () => {},
 });
 
-export const stopSiren = () => {
+const stopSiren = () => {
   try {
     stopNativeAlarm();
   } catch {
@@ -29,13 +29,11 @@ export const stopSiren = () => {
 };
 
 export function AlarmProvider({ children }: { children: ReactNode }) {
-  const [permission, setPermission] = useState(false);
-  const [isRinging, setIsRinging] = useState(false);
+  const [permission, setPermission] = useState(() => hasPermission());
+  const [isRinging, setIsRinging] = useState(() => isNativeAlarmPlaying());
 
   useEffect(() => {
     migrateHistoryIfNeeded();
-    setPermission(hasPermission());
-    setIsRinging(isNativeAlarmPlaying());
 
     const appStateSub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
@@ -61,9 +59,5 @@ export function AlarmProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAlarm() {
-  return useContext(AlarmContext);
-}
-
-export function useAlarmLogic() {
-  return useAlarm();
+  return use(AlarmContext);
 }

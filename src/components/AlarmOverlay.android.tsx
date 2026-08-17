@@ -32,7 +32,7 @@ function AlarmDialog({ onDismiss }: { onDismiss: () => void }) {
         <Icon source={Warning} size={24} tint={colors.error} />
       </AlertDialog.Icon>
       <AlertDialog.Title>
-        <Text>Notification alarm</Text>
+        <Text>Alarm ringing</Text>
       </AlertDialog.Title>
       <AlertDialog.Text>
         <Text>

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import NotificationListenerModule from './src/NotificationListenerModule';
 import {
   AlarmStatePayload,
@@ -7,13 +7,12 @@ import {
 } from './src/NotificationListener.types';
 
 export function useNotificationListener(listener: (event: NotificationReceivedPayload) => void) {
-  const listenerRef = useRef(listener);
-  listenerRef.current = listener;
+  const onNotification = useEffectEvent(listener);
 
   useEffect(() => {
     const subscription = NotificationListenerModule.addListener(
       'onNotificationReceived',
-      (event) => listenerRef.current(event)
+      onNotification
     );
     return () => {
       subscription.remove();
@@ -22,13 +21,14 @@ export function useNotificationListener(listener: (event: NotificationReceivedPa
 }
 
 export function useAlarmStateListener(listener: (playing: boolean) => void) {
-  const listenerRef = useRef(listener);
-  listenerRef.current = listener;
+  const onAlarmStateChanged = useEffectEvent((event: AlarmStatePayload) => {
+    listener(!!event.playing);
+  });
 
   useEffect(() => {
     const subscription = NotificationListenerModule.addListener(
       'onAlarmStateChanged',
-      (event: AlarmStatePayload) => listenerRef.current(!!event.playing)
+      onAlarmStateChanged
     );
     return () => {
       subscription.remove();
@@ -141,6 +141,14 @@ export function getNativeHistory(): NativeHistoryItem[] {
 export function seedNativeHistory(itemsJson: string): void {
   try {
     NotificationListenerModule.seedNativeHistory(itemsJson);
+  } catch {
+    // Ignore if native module is unavailable.
+  }
+}
+
+export function clearNativeHistory(): void {
+  try {
+    NotificationListenerModule.clearNativeHistory();
   } catch {
     // Ignore if native module is unavailable.
   }

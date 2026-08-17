@@ -10,6 +10,12 @@ build/
 .env.local
 .env.*.local
 
+# Google Play / EAS secrets — never commit
+notification-alarm-*.json
+google-service-account.json
+*-fea6.json
+*.iam.gserviceaccount.com.json
+
 # Android build files
 android/app/build/
 android/build/

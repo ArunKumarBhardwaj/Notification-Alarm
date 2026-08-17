@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router/stack';
-import { Colors } from '@/constants/theme';
+import { Colors, Font } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function SettingsLayout() {
@@ -12,16 +12,15 @@ export default function SettingsLayout() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: '600', color: colors.text },
+        headerTitleStyle: { fontFamily: Font.bold, fontSize: 20, color: colors.text },
         headerLargeTitle: false,
-        headerRight: () => null,
         contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen
         name="index"
         options={{
-          title: 'Alarm',
+          title: 'Settings',
           headerBackVisible: false,
         }}
       />

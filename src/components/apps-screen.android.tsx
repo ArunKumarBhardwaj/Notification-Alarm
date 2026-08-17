@@ -1,26 +1,12 @@
-import { Host } from '@expo/ui';
-import {
-  Column,
-  FilterChip,
-  getMaterialColors,
-  Icon,
-  Row,
-  Text,
-  useMaterialColors,
-} from '@expo/ui/jetpack-compose';
-import { fillMaxWidth, padding } from '@expo/ui/jetpack-compose/modifiers';
-import Apps from '@expo/material-symbols/apps.xml';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LegendList } from '@legendapp/list/react-native';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import React, {
-  memo,
   useCallback,
   useDeferredValue,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -28,11 +14,18 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  Text as RNText,
+  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
-import { SEED_COLOR } from '@/constants/theme';
+import {
+  Colors,
+  Radius,
+  Space,
+  TabBar,
+  Type,
+  type ThemeColors,
+} from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getSelectedApps, saveSelectedApps } from '@/lib/storage';
 import {
@@ -41,26 +34,15 @@ import {
   getInstalledApps,
 } from '../../modules/notification-listener';
 
-const ROW_HEIGHT = 72;
-const HEADER_SIZE = 96;
-const ICON_BATCH = 96;
+const CARD_HEIGHT = 68;
+const ROW_HEIGHT = CARD_HEIGHT + Space.sm;
+const HEADER_SIZE = 208;
 // Buffer roughly a screen of rows above and below the viewport. Rows are cheap
 // (one cached image plus two labels), so a wide buffer beats blank space.
 const DRAW_DISTANCE = ROW_HEIGHT * 14;
 
 let cachedApps: AppInfo[] | null = null;
 const iconCache = new Map<string, string>();
-
-type Palette = {
-  ripple: string;
-  primary: string;
-  onSurface: string;
-  onSurfaceVariant: string;
-  outlineVariant: string;
-  primaryContainer: string;
-  onPrimary: string;
-  onPrimaryContainer: string;
-};
 
 function sameAppList(a: AppInfo[], b: AppInfo[]) {
   if (a.length !== b.length) return false;
@@ -71,7 +53,7 @@ function sameAppList(a: AppInfo[], b: AppInfo[]) {
 
 // Rows are pure: icons are resolved in bulk before render, so scrolling never
 // kicks off per-row state updates or native calls.
-const AppRow = memo(function AppRow({
+function AppRow({
   item,
   isSelected,
   iconUri,
@@ -81,112 +63,167 @@ const AppRow = memo(function AppRow({
   item: AppInfo;
   isSelected: boolean;
   iconUri: string | undefined;
-  palette: Palette;
+  palette: ThemeColors;
   onToggle: (packageName: string) => void;
 }) {
-  const onPress = useCallback(() => onToggle(item.packageName), [onToggle, item.packageName]);
-
   return (
-    <Pressable
-      onPress={onPress}
-      android_ripple={{ color: palette.ripple }}
-      style={[
-        styles.row,
-        {
-          backgroundColor: isSelected ? palette.primaryContainer : 'transparent',
-          borderBottomColor: palette.outlineVariant,
-        },
-      ]}
-    >
-      {iconUri ? (
-        <Image
-          source={{ uri: iconUri }}
-          style={styles.icon}
-          recyclingKey={item.packageName}
-          cachePolicy="memory-disk"
-          transition={0}
-          contentFit="contain"
-        />
-      ) : (
-        <View
-          style={[styles.icon, styles.iconFallback, { backgroundColor: palette.outlineVariant }]}
-        >
-          <RNText style={[styles.iconInitial, { color: palette.onSurfaceVariant }]}>
-            {item.name.charAt(0)}
-          </RNText>
-        </View>
-      )}
-
-      <View style={styles.rowText}>
-        <RNText
-          numberOfLines={1}
-          style={[
-            styles.appName,
-            { color: isSelected ? palette.onPrimaryContainer : palette.onSurface },
-          ]}
-        >
-          {item.name}
-        </RNText>
-        <RNText numberOfLines={1} style={[styles.appPackage, { color: palette.onSurfaceVariant }]}>
-          {item.packageName}
-        </RNText>
-      </View>
-
-      <View
-        style={[
-          styles.check,
+    <View style={styles.rowSlot}>
+      <Pressable
+        onPress={() => onToggle(item.packageName)}
+        android_ripple={{ color: `${palette.tint}22`, borderless: false }}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isSelected }}
+        accessibilityLabel={`${item.name}${isSelected ? ', watched' : ''}`}
+        style={({ pressed }) => [
+          styles.card,
           {
-            backgroundColor: isSelected ? palette.primary : 'transparent',
-            borderColor: isSelected ? palette.primary : palette.onSurfaceVariant,
+            backgroundColor: isSelected ? palette.primarySoft : palette.surface,
+            borderColor: isSelected ? palette.tint : palette.border,
+            transform: [{ scale: pressed ? 0.985 : 1 }],
           },
         ]}
       >
-        {isSelected ? <MaterialIcons name="check" size={16} color={palette.onPrimary} /> : null}
-      </View>
-    </Pressable>
-  );
-});
+        <View style={[styles.iconWrap, { backgroundColor: palette.surfaceContainer }]}>
+          {iconUri ? (
+            <Image
+              source={{ uri: iconUri }}
+              style={styles.icon}
+              recyclingKey={item.packageName}
+              cachePolicy="memory-disk"
+              transition={0}
+              contentFit="contain"
+            />
+          ) : (
+            <Text style={[styles.iconInitial, { color: palette.muted }]}>
+              {item.name.charAt(0).toUpperCase()}
+            </Text>
+          )}
+        </View>
 
-function FilterBar({
-  watchingOnly,
+        <View style={styles.rowText}>
+          <Text numberOfLines={1} style={[styles.appName, { color: palette.text }]}>
+            {item.name}
+          </Text>
+          <Text numberOfLines={1} style={[styles.appPackage, { color: palette.muted }]}>
+            {isSelected ? 'Rings the alarm' : item.packageName}
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.check,
+            {
+              backgroundColor: isSelected ? palette.tint : 'transparent',
+              borderColor: isSelected ? palette.tint : palette.borderStrong,
+            },
+          ]}
+        >
+          {isSelected ? (
+            <MaterialIcons name="check" size={16} color={palette.onPrimary} />
+          ) : null}
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+function ListHeader({
+  palette,
   watchedCount,
   totalCount,
+  watchingOnly,
   onSelectAll,
   onSelectWatching,
 }: {
-  watchingOnly: boolean;
+  palette: ThemeColors;
   watchedCount: number;
   totalCount: number;
+  watchingOnly: boolean;
   onSelectAll: () => void;
   onSelectWatching: () => void;
 }) {
-  const colors = useMaterialColors();
-  const watchingLabel =
-    watchedCount > 0 ? `Watching · ${watchedCount}` : 'Watching';
+  const active = watchedCount > 0;
 
   return (
-    <Column
-      modifiers={[fillMaxWidth(), padding(16, 4, 16, 8)]}
-      verticalArrangement={{ spacedBy: 10 }}
-    >
-      <Text color={colors.onSurfaceVariant} style={{ typography: 'bodyMedium' }}>
-        {watchedCount > 0
-          ? `${watchedCount} of ${totalCount} apps will ring the alarm`
-          : 'Choose the apps that should never go unnoticed'}
-      </Text>
-      <Row horizontalArrangement={{ spacedBy: 8 }} verticalAlignment="center">
-        <FilterChip selected={!watchingOnly} onClick={onSelectAll}>
-          <FilterChip.Label>
-            <Text>All</Text>
-          </FilterChip.Label>
-        </FilterChip>
-        <FilterChip selected={watchingOnly} onClick={onSelectWatching}>
-          <FilterChip.Label>
-            <Text>{watchingLabel}</Text>
-          </FilterChip.Label>
-        </FilterChip>
-      </Row>
-    </Column>
+    <View style={styles.header}>
+      <View
+        style={[
+          styles.summary,
+          {
+            backgroundColor: active ? palette.chrome : palette.surface,
+            borderColor: active ? palette.chrome : palette.border,
+          },
+        ]}
+      >
+        <View style={styles.summaryText}>
+          <Text
+            style={[styles.kicker, { color: active ? palette.tint : palette.muted }]}
+          >
+            {active ? 'On watch' : 'Not watching'}
+          </Text>
+          <Text
+            style={[styles.metric, { color: active ? palette.onChrome : palette.text }]}
+          >
+            {watchedCount}
+          </Text>
+          <Text
+            style={[
+              styles.summaryCaption,
+              { color: active ? palette.chromeMuted : palette.muted },
+            ]}
+          >
+            {active
+              ? `of ${totalCount} apps can ring the alarm`
+              : 'Tap an app below to make it ring'}
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.summaryGlyph,
+            { backgroundColor: active ? palette.tint : palette.surfaceContainer },
+          ]}
+        >
+          <MaterialIcons
+            name={active ? 'notifications-active' : 'notifications-off'}
+            size={26}
+            color={active ? palette.onPrimary : palette.muted}
+          />
+        </View>
+      </View>
+
+      <View style={[styles.segment, { backgroundColor: palette.surfaceContainer }]}>
+        {[
+          { key: 'all', label: 'All apps', selected: !watchingOnly, onPress: onSelectAll },
+          {
+            key: 'watching',
+            label: active ? `Watching · ${watchedCount}` : 'Watching',
+            selected: watchingOnly,
+            onPress: onSelectWatching,
+          },
+        ].map((tab) => (
+          <Pressable
+            key={tab.key}
+            onPress={tab.onPress}
+            accessibilityRole="button"
+            accessibilityState={{ selected: tab.selected }}
+            style={[
+              styles.segmentItem,
+              tab.selected ? { backgroundColor: palette.surface } : null,
+            ]}
+          >
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.segmentLabel,
+                { color: tab.selected ? palette.text : palette.muted },
+              ]}
+            >
+              {tab.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -195,23 +232,7 @@ const getRowSize = () => ROW_HEIGHT;
 export default function AppsScreen() {
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const { width, height } = useWindowDimensions();
-  const colors = useMemo(
-    () => getMaterialColors({ scheme: colorScheme, seedColor: SEED_COLOR }),
-    [colorScheme]
-  );
-  const palette = useMemo<Palette>(
-    () => ({
-      ripple: `${colors.primary.slice(0, 7)}33`,
-      primary: colors.primary,
-      onSurface: colors.onSurface,
-      onSurfaceVariant: colors.onSurfaceVariant,
-      outlineVariant: colors.outlineVariant,
-      primaryContainer: colors.primaryContainer,
-      onPrimary: colors.onPrimary,
-      onPrimaryContainer: colors.onPrimaryContainer,
-    }),
-    [colors]
-  );
+  const palette = Colors[colorScheme];
 
   const [apps, setApps] = useState<AppInfo[]>(cachedApps ?? []);
   const [refreshing, setRefreshing] = useState(!cachedApps);
@@ -231,59 +252,64 @@ export default function AppsScreen() {
   }, []);
 
   const hydrateIcons = useCallback(async (list: AppInfo[]) => {
-    const missing = list
-      .map((app) => app.packageName)
-      .filter((packageName) => !iconCache.has(packageName));
-
-    for (let i = 0; i < missing.length; i += ICON_BATCH) {
-      const icons = await getAppIcons(missing.slice(i, i + ICON_BATCH));
-      const added: string[] = [];
-      for (const [packageName, uri] of Object.entries(icons)) {
-        if (!uri) continue;
-        iconCache.set(packageName, uri);
-        added.push(uri);
-      }
-      if (!mountedRef.current) return;
-      if (added.length === 0) continue;
-      // Warm the decode cache so recycled rows never wait on a disk read.
-      Image.prefetch(added, { cachePolicy: 'memory-disk' }).catch(() => {});
-      setIconVersion((version) => version + 1);
+    const missing: string[] = [];
+    for (const app of list) {
+      if (!iconCache.has(app.packageName)) missing.push(app.packageName);
     }
+
+    if (missing.length === 0) return;
+    const icons = await getAppIcons(missing);
+    const added: string[] = [];
+    for (const [packageName, uri] of Object.entries(icons)) {
+      if (!uri) continue;
+      iconCache.set(packageName, uri);
+      added.push(uri);
+    }
+    if (!mountedRef.current || added.length === 0) return;
+    // Warm the decode cache so recycled rows never wait on a disk read.
+    Image.prefetch(added, { cachePolicy: 'memory-disk' }).catch(() => {});
+    setIconVersion((version) => version + 1);
   }, []);
 
   const loadApps = useCallback(async () => {
-    try {
-      const allApps = await getInstalledApps();
-      cachedApps = allApps;
-      for (const app of allApps) {
-        if (app.icon) iconCache.set(app.packageName, app.icon);
-      }
-      if (!mountedRef.current) return;
-      setApps((prev) => (sameAppList(prev, allApps) ? prev : allApps));
-      setSelectedPackages(new Set(getSelectedApps()));
-      setIconVersion((version) => version + 1);
-      hydrateIcons(allApps);
-    } finally {
+    const allApps = await getInstalledApps().catch(() => null);
+    if (!allApps) {
       if (mountedRef.current) setRefreshing(false);
+      return;
     }
+
+    cachedApps = allApps;
+    for (const app of allApps) {
+      if (app.icon) iconCache.set(app.packageName, app.icon);
+    }
+    if (!mountedRef.current) return;
+    setApps((prev) => (sameAppList(prev, allApps) ? prev : allApps));
+    setSelectedPackages(new Set(getSelectedApps()));
+    setIconVersion((version) => version + 1);
+    void hydrateIcons(allApps);
+    setRefreshing(false);
   }, [hydrateIcons]);
 
   useEffect(() => {
-    if (!cachedApps) {
-      loadApps();
+    const appsToHydrate = cachedApps;
+    if (!appsToHydrate) {
+      void loadApps();
       return;
     }
-    hydrateIcons(cachedApps);
+    const hydrateCachedIcons = async () => {
+      await hydrateIcons(appsToHydrate);
+    };
+    void hydrateCachedIcons();
   }, [loadApps, hydrateIcons]);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true);
-    loadApps();
-  }, [loadApps]);
+    void loadApps();
+  };
 
   const deferredSearch = useDeferredValue(search);
 
-  const searchedApps = useMemo(() => {
+  const searchedApps = (() => {
     const query = deferredSearch.trim().toLowerCase();
     if (!query) return apps;
     return apps.filter(
@@ -291,132 +317,71 @@ export default function AppsScreen() {
         app.name.toLowerCase().includes(query) ||
         app.packageName.toLowerCase().includes(query)
     );
-  }, [apps, deferredSearch]);
+  })();
 
   // Keeping the watching filter separate means toggling an app in "All" mode
   // returns the same array reference, so the list skips a full re-layout.
-  const filteredApps = useMemo(() => {
-    if (!watchingOnly) return searchedApps;
-    return searchedApps.filter((app) => selectedPackages.has(app.packageName));
-  }, [searchedApps, watchingOnly, selectedPackages]);
+  const filteredApps = watchingOnly
+    ? searchedApps.filter((app) => selectedPackages.has(app.packageName))
+    : searchedApps;
 
-  const toggleApp = useCallback((packageName: string) => {
+  const toggleApp = (packageName: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedPackages((prev) => {
-      const next = new Set(prev);
-      if (next.has(packageName)) next.delete(packageName);
-      else next.add(packageName);
-      saveSelectedApps(Array.from(next));
-      return next;
-    });
-  }, []);
+    const next = new Set(selectedPackages);
+    if (next.has(packageName)) next.delete(packageName);
+    else next.add(packageName);
+    saveSelectedApps(Array.from(next));
+    setSelectedPackages(next);
+  };
 
-  const selectedRef = useRef(selectedPackages);
-  selectedRef.current = selectedPackages;
-
-  const renderItem = useCallback(
-    ({ item }: { item: AppInfo }) => (
-      <AppRow
-        item={item}
-        isSelected={selectedRef.current.has(item.packageName)}
-        iconUri={iconCache.get(item.packageName)}
-        palette={palette}
-        onToggle={toggleApp}
-      />
-    ),
-    [palette, toggleApp]
+  const renderItem = ({ item }: { item: AppInfo }) => (
+    <AppRow
+      item={item}
+      isSelected={selectedPackages.has(item.packageName)}
+      iconUri={iconCache.get(item.packageName)}
+      palette={palette}
+      onToggle={toggleApp}
+    />
   );
 
-  const extraData = useMemo(
-    () => ({ selectedPackages, iconVersion }),
-    [selectedPackages, iconVersion]
-  );
+  // `palette` is part of extraData because recycled rows only re-render when
+  // data or extraData changes; without it they keep the previous scheme's text
+  // colors after a light/dark switch.
+  const extraData = { selectedPackages, iconVersion, palette };
 
-  const listSize = useMemo(() => ({ width, height }), [width, height]);
+  const listSize = { width, height };
 
-  const listHeader = useMemo(
-    () => (
-      <Host
-        matchContents={{ vertical: true, horizontal: false }}
-        seedColor={SEED_COLOR}
-        colorScheme={colorScheme}
-        style={{ width }}
-      >
-        <FilterBar
-          watchingOnly={watchingOnly}
-          watchedCount={selectedPackages.size}
-          totalCount={apps.length}
-          onSelectAll={() => setWatchingOnly(false)}
-          onSelectWatching={() => setWatchingOnly(true)}
-        />
-      </Host>
-    ),
-    [colorScheme, width, watchingOnly, selectedPackages.size, apps.length]
-  );
-
-  const listEmpty = useMemo(
-    () => (
-      <Host
-        matchContents={{ vertical: true, horizontal: false }}
-        seedColor={SEED_COLOR}
-        colorScheme={colorScheme}
-        style={{ width }}
-      >
-        <Column
-          modifiers={[fillMaxWidth(), padding(32, 48, 32, 32)]}
-          horizontalAlignment="center"
-          verticalArrangement={{ spacedBy: 8 }}
-        >
-          <Icon source={Apps} size={40} tint={colors.onSurfaceVariant} />
-          <Text
-            color={colors.onSurface}
-            style={{ typography: 'titleMedium', textAlign: 'center' }}
-          >
-            {deferredSearch
-              ? 'No matching apps'
-              : watchingOnly
-                ? 'Nothing watched yet'
-                : 'No apps found'}
-          </Text>
-          <Text
-            color={colors.onSurfaceVariant}
-            style={{ typography: 'bodyMedium', textAlign: 'center' }}
-          >
-            {deferredSearch
-              ? 'Try a different name or package.'
-              : watchingOnly
-                ? 'Switch to All and tap the apps that should wake you.'
-                : 'Launcher apps appear here. Anything that notifies you is added automatically.'}
-          </Text>
-        </Column>
-      </Host>
-    ),
-    [
-      colorScheme,
-      width,
-      colors.onSurface,
-      colors.onSurfaceVariant,
-      deferredSearch,
-      watchingOnly,
-    ]
-  );
+  const emptyTitle = deferredSearch
+    ? 'No matching apps'
+    : watchingOnly
+      ? 'Nothing watched yet'
+      : refreshing
+        ? 'Loading apps'
+        : 'No apps found';
+  const emptyBody = deferredSearch
+    ? 'Try a different name or package.'
+    : watchingOnly
+      ? 'Switch to All apps and tap the ones that should wake you.'
+      : refreshing
+        ? 'Installed apps will appear here in a moment.'
+        : 'Launcher apps appear here. Anything that notifies you is added automatically.';
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: palette.background }]}>
       <Stack.Screen
         options={{
           headerTitle: 'Apps',
           headerLargeTitle: true,
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.onSurface,
+          headerStyle: { backgroundColor: palette.background },
+          headerTintColor: palette.text,
           headerSearchBarOptions: {
             placeholder: 'Search apps',
             onChangeText: (event) => setSearch(event.nativeEvent.text),
             onCancelButtonPress: () => setSearch(''),
-            textColor: colors.onSurface,
-            hintTextColor: colors.onSurfaceVariant,
-            headerIconColor: colors.onSurfaceVariant,
+            textColor: palette.text,
+            hintTextColor: palette.muted,
+            headerIconColor: palette.muted,
           },
         }}
       />
@@ -435,15 +400,32 @@ export default function AppsScreen() {
         contentContainerStyle={
           filteredApps.length === 0 ? styles.listContentEmpty : styles.listContent
         }
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={listEmpty}
+        ListHeaderComponent={
+          <ListHeader
+            palette={palette}
+            watchedCount={selectedPackages.size}
+            totalCount={apps.length}
+            watchingOnly={watchingOnly}
+            onSelectAll={() => setWatchingOnly(false)}
+            onSelectWatching={() => setWatchingOnly(true)}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <View style={[styles.emptyGlyph, { backgroundColor: palette.surfaceContainer }]}>
+              <MaterialIcons name="apps" size={28} color={palette.muted} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: palette.text }]}>{emptyTitle}</Text>
+            <Text style={[styles.emptyBody, { color: palette.muted }]}>{emptyBody}</Text>
+          </View>
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-            progressBackgroundColor={colors.surface}
+            colors={[palette.tint]}
+            tintColor={palette.tint}
+            progressBackgroundColor={palette.surface}
           />
         }
       />
@@ -453,49 +435,132 @@ export default function AppsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  listContent: { paddingBottom: 40 },
-  listContentEmpty: { flexGrow: 1, paddingBottom: 40 },
-  row: {
+  listContent: { paddingBottom: TabBar.clearance },
+  listContentEmpty: { flexGrow: 1, paddingBottom: TabBar.clearance },
+  header: {
+    paddingHorizontal: Space.lg,
+    paddingTop: Space.sm,
+    paddingBottom: Space.md,
+    gap: Space.md,
+  },
+  summary: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: ROW_HEIGHT,
-    paddingHorizontal: 16,
-    gap: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'space-between',
+    gap: Space.lg,
+    padding: Space.lg,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
   },
-  icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-  iconFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconInitial: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  rowText: {
+  summaryText: {
     flex: 1,
     minWidth: 0,
     gap: 2,
   },
+  kicker: {
+    ...Type.kicker,
+  },
+  metric: {
+    ...Type.metric,
+  },
+  summaryCaption: {
+    ...Type.supporting,
+  },
+  summaryGlyph: {
+    width: 52,
+    height: 52,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segment: {
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: Radius.pill,
+    gap: 4,
+  },
+  segmentItem: {
+    flex: 1,
+    height: 38,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Space.md,
+  },
+  segmentLabel: {
+    ...Type.caption,
+    fontSize: 13,
+  },
+  rowSlot: {
+    height: ROW_HEIGHT,
+    paddingHorizontal: Space.lg,
+    paddingBottom: Space.sm,
+  },
+  card: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Space.md,
+    paddingHorizontal: Space.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  icon: {
+    width: 30,
+    height: 30,
+  },
+  iconInitial: {
+    ...Type.rowTitle,
+  },
+  rowText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
   appName: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '500',
+    ...Type.rowTitle,
   },
   appPackage: {
-    fontSize: 12,
-    lineHeight: 16,
+    ...Type.caption,
   },
   check: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: Radius.sm,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Space.xl,
+    gap: Space.sm,
+  },
+  emptyGlyph: {
+    width: 64,
+    height: 64,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Space.xs,
+  },
+  emptyTitle: {
+    ...Type.sectionTitle,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    ...Type.supporting,
+    textAlign: 'center',
   },
 });
