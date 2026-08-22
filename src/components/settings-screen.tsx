@@ -5,7 +5,6 @@ import * as Sentry from '@sentry/react-native';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   Share,
@@ -13,6 +12,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AppAlertDialog, type DialogConfig } from '@/components/ui/app-alert-dialog';
 import { SwitchToggle } from '@/components/ui/switch-toggle';
 import {
   Colors,
@@ -88,9 +88,16 @@ function PreferenceRow({
   );
 }
 
-async function checkAndApplyUpdate(setIsCheckingUpdate: (checking: boolean) => void) {
+async function checkAndApplyUpdate(
+  setIsCheckingUpdate: (checking: boolean) => void,
+  showDialog: (config: DialogConfig) => void
+) {
   if (__DEV__) {
-    Alert.alert('Development Mode', 'OTA updates are disabled in development mode.');
+    showDialog({
+      title: 'Development Mode',
+      message: 'OTA updates are disabled in development mode.',
+      actions: [{ text: 'OK' }],
+    });
     return;
   }
   try {
@@ -98,10 +105,10 @@ async function checkAndApplyUpdate(setIsCheckingUpdate: (checking: boolean) => v
     const update = await Updates.checkForUpdateAsync();
     if (update.isAvailable) {
       await Updates.fetchUpdateAsync();
-      Alert.alert(
-        'Update Downloaded! 🎉',
-        'A new OTA update has been fetched. Would you like to restart the app to apply it now?',
-        [
+      showDialog({
+        title: 'Update Downloaded! 🎉',
+        message: 'A new OTA update has been fetched. Would you like to restart the app to apply it now?',
+        actions: [
           { text: 'Later', style: 'cancel' },
           {
             text: 'Restart Now',
@@ -109,13 +116,21 @@ async function checkAndApplyUpdate(setIsCheckingUpdate: (checking: boolean) => v
               void Updates.reloadAsync();
             },
           },
-        ]
-      );
+        ],
+      });
     } else {
-      Alert.alert('Up to Date ✨', 'You are running the latest OTA version.');
+      showDialog({
+        title: 'Up to Date ✨',
+        message: 'You are running the latest OTA version.',
+        actions: [{ text: 'OK' }],
+      });
     }
   } catch (error) {
-    Alert.alert('Update Check', error instanceof Error ? error.message : String(error));
+    showDialog({
+      title: 'Update Check',
+      message: error instanceof Error ? error.message : String(error),
+      actions: [{ text: 'OK' }],
+    });
   } finally {
     setIsCheckingUpdate(false);
   }
@@ -128,6 +143,7 @@ export default function SettingsScreen() {
   const build = Constants.nativeBuildVersion;
   const [quietHours, setQuietHours] = useState(() => isQuietHoursEnabled());
   const [vibration, setVibration] = useState(() => isVibrationEnabled());
+  const [dialogConfig, setDialogConfig] = useState<DialogConfig | null>(null);
 
   const toggleQuietHours = (value: boolean) => {
     setQuietHours(value);
@@ -144,7 +160,11 @@ export default function SettingsScreen() {
   const shareHistory = async () => {
     const history = getHistory();
     if (history.length === 0) {
-      Alert.alert('No activity yet', 'Watched notifications will appear here after they arrive.');
+      setDialogConfig({
+        title: 'No activity yet',
+        message: 'Watched notifications will appear here after they arrive.',
+        actions: [{ text: 'OK' }],
+      });
       return;
     }
     const lines = history.map((item) => {
@@ -158,10 +178,10 @@ export default function SettingsScreen() {
   };
 
   const confirmClearHistory = () => {
-    Alert.alert(
-      'Clear recent activity?',
-      'This permanently removes notification history stored by Alertify.',
-      [
+    setDialogConfig({
+      title: 'Clear recent activity?',
+      message: 'This permanently removes notification history stored by Notification Alarm.',
+      actions: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear',
@@ -171,16 +191,17 @@ export default function SettingsScreen() {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           },
         },
-      ]
-    );
+      ],
+    });
   };
 
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-  const handleCheckUpdate = () => void checkAndApplyUpdate(setIsCheckingUpdate);
+  const handleCheckUpdate = () => void checkAndApplyUpdate(setIsCheckingUpdate, setDialogConfig);
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: palette.background }}
+    <>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: palette.background }}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
@@ -232,8 +253,12 @@ export default function SettingsScreen() {
             subtitle="Send a test diagnostic message to Sentry"
             palette={palette}
             onPress={() => {
-              Sentry.captureMessage('Sentry diagnostic test from Alertify Settings Screen!');
-              Alert.alert('Sentry Event Sent! 🚀', 'Check your Sentry dashboard (Issues tab) to view this test event.');
+              Sentry.captureMessage('Sentry diagnostic test from Notification Alarm Settings Screen!');
+              setDialogConfig({
+                title: 'Sentry Event Sent! 🚀',
+                message: 'Check your Sentry dashboard (Issues tab) to view this test event.',
+                actions: [{ text: 'OK' }],
+              });
             }}
           />
         </View>
@@ -323,6 +348,8 @@ export default function SettingsScreen() {
         </View>
       </View>
     </ScrollView>
+    <AppAlertDialog config={dialogConfig} onDismiss={() => setDialogConfig(null)} />
+  </>
   );
 }
 

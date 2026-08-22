@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Notification Alarm",
-    "slug": "Alertify",
+    "slug": "Notification-Alarm",
     "version": "1.0.0",
     "description": "Loud alarm when a notification arrives so you never miss WhatsApp, Slack, or any app you choose.",
     "runtimeVersion": {
