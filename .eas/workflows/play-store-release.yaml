@@ -27,6 +27,5 @@ jobs:
     needs: [build_android]
     type: submit
     params:
-      platform: android
+      build_id: ${{ needs.build_android.outputs.build_id }}
       profile: internal
-      releaseNotes: ${{ github.event.head_commit.message || 'Bug fixes and improvements' }}
