@@ -18,8 +18,10 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 
 import { AlarmOverlay } from "@/components/AlarmOverlay";
+import { AppDialogOverlay } from "@/components/AppDialogOverlay";
 import { Colors, Font } from "@/constants/theme";
 import { AlarmProvider } from "@/hooks/alarm-provider";
+import { DialogProvider } from "@/hooks/dialog-provider";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 Sentry.init({
@@ -86,25 +88,28 @@ function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <AlarmProvider>
-      <ThemeProvider value={navigationTheme}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: palette.background },
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen
-            name="onboarding"
-            options={{ animation: "fade", gestureEnabled: false }}
-          />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-        <AlarmOverlay />
-        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-      </ThemeProvider>
-    </AlarmProvider>
+    <DialogProvider>
+      <AlarmProvider>
+        <ThemeProvider value={navigationTheme}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: palette.background },
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen
+              name="onboarding"
+              options={{ animation: "fade", gestureEnabled: false }}
+            />
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+          <AlarmOverlay />
+          <AppDialogOverlay />
+          <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+        </ThemeProvider>
+      </AlarmProvider>
+    </DialogProvider>
   );
 }
 

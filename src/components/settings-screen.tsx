@@ -12,7 +12,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { AppAlertDialog, type DialogConfig } from '@/components/ui/app-alert-dialog';
+import { useAppDialog, type DialogConfig } from '@/hooks/dialog-provider';
 import { SwitchToggle } from '@/components/ui/switch-toggle';
 import {
   Colors,
@@ -141,9 +141,9 @@ export default function SettingsScreen() {
   const palette = Colors[colorScheme];
   const version = Constants.expoConfig?.version ?? '1.0.0';
   const build = Constants.nativeBuildVersion;
+  const { showDialog } = useAppDialog();
   const [quietHours, setQuietHours] = useState(() => isQuietHoursEnabled());
   const [vibration, setVibration] = useState(() => isVibrationEnabled());
-  const [dialogConfig, setDialogConfig] = useState<DialogConfig | null>(null);
 
   const toggleQuietHours = (value: boolean) => {
     setQuietHours(value);
@@ -160,7 +160,7 @@ export default function SettingsScreen() {
   const shareHistory = async () => {
     const history = getHistory();
     if (history.length === 0) {
-      setDialogConfig({
+      showDialog({
         title: 'No activity yet',
         message: 'Watched notifications will appear here after they arrive.',
         actions: [{ text: 'OK' }],
@@ -178,7 +178,7 @@ export default function SettingsScreen() {
   };
 
   const confirmClearHistory = () => {
-    setDialogConfig({
+    showDialog({
       title: 'Clear recent activity?',
       message: 'This permanently removes notification history stored by Notification Alarm.',
       actions: [
@@ -196,12 +196,11 @@ export default function SettingsScreen() {
   };
 
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-  const handleCheckUpdate = () => void checkAndApplyUpdate(setIsCheckingUpdate, setDialogConfig);
+  const handleCheckUpdate = () => void checkAndApplyUpdate(setIsCheckingUpdate, showDialog);
 
   return (
-    <>
-      <ScrollView
-        style={{ flex: 1, backgroundColor: palette.background }}
+    <ScrollView
+      style={{ flex: 1, backgroundColor: palette.background }}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
@@ -254,7 +253,7 @@ export default function SettingsScreen() {
             palette={palette}
             onPress={() => {
               Sentry.captureMessage('Sentry diagnostic test from Notification Alarm Settings Screen!');
-              setDialogConfig({
+              showDialog({
                 title: 'Sentry Event Sent! 🚀',
                 message: 'Check your Sentry dashboard (Issues tab) to view this test event.',
                 actions: [{ text: 'OK' }],
@@ -348,8 +347,6 @@ export default function SettingsScreen() {
         </View>
       </View>
     </ScrollView>
-    <AppAlertDialog config={dialogConfig} onDismiss={() => setDialogConfig(null)} />
-  </>
   );
 }
 
