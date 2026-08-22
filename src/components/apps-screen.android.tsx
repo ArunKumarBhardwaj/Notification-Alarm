@@ -236,7 +236,8 @@ export default function AppsScreen() {
   const palette = Colors[colorScheme];
 
   const [apps, setApps] = useState<AppInfo[]>(cachedApps ?? []);
-  const [refreshing, setRefreshing] = useState(!cachedApps);
+  const [isInitialLoading, setIsInitialLoading] = useState(() => !cachedApps);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [watchingOnly, setWatchingOnly] = useState(false);
   const [iconVersion, setIconVersion] = useState(0);
@@ -272,10 +273,13 @@ export default function AppsScreen() {
     setIconVersion((version) => version + 1);
   }, []);
 
-  const loadApps = useCallback(async () => {
+  const loadApps = useCallback(async (isManualRefresh = false) => {
     const allApps = await getInstalledApps().catch(() => null);
     if (!allApps) {
-      if (mountedRef.current) setRefreshing(false);
+      if (mountedRef.current) {
+        setIsRefreshing(false);
+        setIsInitialLoading(false);
+      }
       return;
     }
 
@@ -288,13 +292,17 @@ export default function AppsScreen() {
     setSelectedPackages(new Set(getSelectedApps()));
     setIconVersion((version) => version + 1);
     void hydrateIcons(allApps);
-    setRefreshing(false);
+    setIsRefreshing(false);
+    setIsInitialLoading(false);
+    if (isManualRefresh) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
   }, [hydrateIcons]);
 
   useEffect(() => {
     const appsToHydrate = cachedApps;
     if (!appsToHydrate) {
-      void loadApps();
+      void loadApps(false);
       return;
     }
     const hydrateCachedIcons = async () => {
@@ -304,8 +312,9 @@ export default function AppsScreen() {
   }, [loadApps, hydrateIcons]);
 
   const onRefresh = () => {
-    setRefreshing(true);
-    void loadApps();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsRefreshing(true);
+    void loadApps(true);
   };
 
   const deferredSearch = useDeferredValue(search);
@@ -352,7 +361,7 @@ export default function AppsScreen() {
 
   const listSize = { width, height };
 
-  const isLoading = refreshing && apps.length === 0;
+  const isLoading = isInitialLoading && apps.length === 0;
 
   const emptyTitle = isLoading
     ? 'Loading apps'
@@ -434,11 +443,12 @@ export default function AppsScreen() {
         }
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={isRefreshing}
             onRefresh={onRefresh}
-            colors={[palette.tint]}
+            colors={[palette.tint, palette.chrome, palette.primarySoft, palette.attention]}
             tintColor={palette.tint}
             progressBackgroundColor={palette.surface}
+            progressViewOffset={Space.md}
           />
         }
       />

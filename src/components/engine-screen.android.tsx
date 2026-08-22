@@ -14,11 +14,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SwitchToggle } from '@/components/ui/switch-toggle';
 import {
   Colors,
-  Motion,
   Radius,
   Space,
   TabBar,
@@ -26,7 +24,6 @@ import {
   type ThemeColors,
 } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   getAlarmSoundUri,
   getHistory,
@@ -60,23 +57,14 @@ function formatTime(ts: number) {
 function Section({
   title,
   palette,
-  delay,
-  reduceMotion,
   children,
 }: {
   title: string;
   palette: ThemeColors;
-  delay: number;
-  reduceMotion: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <Animated.View
-      entering={
-        reduceMotion ? undefined : FadeInDown.duration(Motion.interaction).delay(delay)
-      }
-      style={styles.section}
-    >
+    <View style={styles.section}>
       <Text style={[styles.sectionTitle, { color: palette.muted }]}>{title}</Text>
       <View
         style={[
@@ -86,7 +74,7 @@ function Section({
       >
         {children}
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -163,7 +151,6 @@ function StatusPill({
 export default function EngineScreen() {
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const palette = Colors[colorScheme];
-  const reduceMotion = useReducedMotion();
   const [permission, setPermission] = useState(() => hasPermission());
   const [canPost, setCanPost] = useState(
     () => !needsPostPermission || canPostNotifications()
@@ -248,8 +235,7 @@ export default function EngineScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View
-        entering={reduceMotion ? undefined : FadeInDown.duration(Motion.interaction)}
+      <View
         style={[
           styles.hero,
           {
@@ -296,9 +282,9 @@ export default function EngineScreen() {
             {statusBody}
           </Text>
         </View>
-      </Animated.View>
+      </View>
 
-      <Section title="Setup" palette={palette} delay={40} reduceMotion={reduceMotion}>
+      <Section title="Setup" palette={palette}>
         <SettingsRow
           icon="notifications"
           title="Notification access"
@@ -358,7 +344,7 @@ export default function EngineScreen() {
         />
       </Section>
 
-      <Section title="Alarm" palette={palette} delay={80} reduceMotion={reduceMotion}>
+      <Section title="Alarm" palette={palette}>
         <SettingsRow
           icon="music-note"
           title="Alarm sound"
@@ -411,7 +397,7 @@ export default function EngineScreen() {
         />
       </Section>
 
-      <Section title="Recent activity" palette={palette} delay={120} reduceMotion={reduceMotion}>
+      <Section title="Recent activity" palette={palette}>
         {history.length === 0 ? (
           <Text style={[styles.emptyHistory, { color: palette.muted }]}>
             No alerts yet. Watched-app notifications show up here, even if this app was killed.
