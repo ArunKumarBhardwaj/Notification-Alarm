@@ -1,18 +1,20 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import { useEffect, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { Colors, Radius, Space, TabBar, Type } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 type IconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
-// Also acts as the allow-list: routes without an entry (the redirect index) are
-// never drawn in the bar.
 const ICONS: Record<string, { active: IconName; inactive: IconName }> = {
   apps: { active: 'apps', inactive: 'apps' },
   alarm: { active: 'notifications-active', inactive: 'notifications-none' },
@@ -23,7 +25,6 @@ const BAR_HEIGHT = TabBar.height;
 const PILL_INSET = TabBar.inset;
 
 export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  'use no memo';
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const palette = Colors[colorScheme];
   const insets = useSafeAreaInsets();
@@ -35,31 +36,28 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
     0,
     tabs.findIndex((route) => route.key === state.routes[state.index]?.key)
   );
-  const [progress] = useState(() => new Animated.Value(activeTab));
+
+  const progress = useSharedValue(activeTab);
 
   useEffect(() => {
     if (reduceMotion) {
-      progress.setValue(activeTab);
+      progress.value = activeTab;
       return;
     }
-    const animation = Animated.spring(progress, {
-      toValue: activeTab,
-      useNativeDriver: true,
+    progress.value = withSpring(activeTab, {
       damping: 18,
       stiffness: 190,
       mass: 0.7,
     });
-    animation.start();
-    return () => animation.stop();
   }, [activeTab, progress, reduceMotion]);
 
   const slotWidth = barWidth > 0 ? (barWidth - PILL_INSET * 2) / tabs.length : 0;
-  const translateX = progress.interpolate({
-    inputRange: tabs.length > 1 ? tabs.map((_, index) => index) : [0, 1],
-    outputRange:
-      tabs.length > 1
-        ? tabs.map((_, index) => PILL_INSET + index * slotWidth)
-        : [PILL_INSET, PILL_INSET],
+
+  const pillAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateX: PILL_INSET + progress.value * slotWidth }],
+    };
   });
 
   return (
@@ -79,8 +77,9 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
           {
             backgroundColor: palette.surface,
             borderColor: palette.border,
-            shadowColor: '#000',
-            shadowOpacity: colorScheme === 'dark' ? 0.35 : 0.08,
+            boxShadow: colorScheme === 'dark'
+              ? '0 6px 16px rgba(0, 0, 0, 0.35)'
+              : '0 6px 16px rgba(0, 0, 0, 0.08)',
           },
         ]}
       >
@@ -89,7 +88,8 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
             pointerEvents="none"
             style={[
               styles.pill,
-              { width: slotWidth, backgroundColor: palette.primarySoft, transform: [{ translateX }] },
+              { width: slotWidth, backgroundColor: palette.primarySoft },
+              pillAnimatedStyle,
             ]}
           />
         ) : null}
@@ -166,9 +166,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     paddingHorizontal: PILL_INSET,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 16,
-    elevation: 8,
   },
   pill: {
     position: 'absolute',

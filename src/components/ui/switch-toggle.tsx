@@ -83,10 +83,6 @@ const styles = StyleSheet.create({
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: Radius.pill,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.16)',
   },
 });

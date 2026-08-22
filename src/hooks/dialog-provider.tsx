@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 export type DialogAction = {
   text: string;
@@ -20,31 +20,16 @@ type DialogContextType = {
 
 const DialogContext = createContext<DialogContextType | null>(null);
 
-let globalShowDialog: ((config: DialogConfig) => void) | null = null;
-
-export function showAppAlert(config: DialogConfig) {
-  if (globalShowDialog) {
-    globalShowDialog(config);
-  }
-}
-
 export function DialogProvider({ children }: { children: React.ReactNode }) {
   const [dialogConfig, setDialogConfig] = useState<DialogConfig | null>(null);
 
-  const showDialog = useCallback((config: DialogConfig) => {
+  const showDialog = (config: DialogConfig) => {
     setDialogConfig(config);
-  }, []);
+  };
 
-  const hideDialog = useCallback(() => {
+  const hideDialog = () => {
     setDialogConfig(null);
-  }, []);
-
-  useEffect(() => {
-    globalShowDialog = showDialog;
-    return () => {
-      globalShowDialog = null;
-    };
-  }, [showDialog]);
+  };
 
   return (
     <DialogContext.Provider value={{ showDialog, hideDialog, dialogConfig }}>

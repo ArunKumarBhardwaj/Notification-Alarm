@@ -1,48 +1,49 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import React, { useEffect } from 'react';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import Animated, {
+  Easing,
+  FadeIn,
+  SlideInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { Colors, Motion, Radius, Space, Type } from '@/constants/theme';
 import { useAlarm } from '@/hooks/alarm-provider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import React, { useEffect, useState } from 'react';
-import { Animated as RNAnimated, Pressable, StyleSheet, Text } from 'react-native';
-import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
-import { IconSymbol } from './ui/icon-symbol';
 
 function AlarmIcon({ color, reduceMotion }: { color: string; reduceMotion: boolean }) {
-  'use no memo';
-  const [scale] = useState(() => new RNAnimated.Value(1));
+  const scale = useSharedValue(1);
 
   useEffect(() => {
     if (reduceMotion) {
-      scale.setValue(1);
+      scale.value = 1;
       return;
     }
-    const loop = RNAnimated.loop(
-      RNAnimated.sequence([
-        RNAnimated.timing(scale, {
-          toValue: 1.06,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        RNAnimated.timing(scale, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ])
+    scale.value = withRepeat(
+      withTiming(1.06, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
     );
-    loop.start();
-    return () => loop.stop();
   }, [reduceMotion, scale]);
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
-    <RNAnimated.View
+    <Animated.View
       style={[
         styles.iconContainer,
-        { backgroundColor: `${color}22`, transform: [{ scale }] },
+        { backgroundColor: `${color}22` },
+        animatedStyle,
       ]}
     >
-      <IconSymbol name="exclamationmark.triangle.fill" size={40} color={color} />
-    </RNAnimated.View>
+      <MaterialIcons name="warning" size={40} color={color} />
+    </Animated.View>
   );
 }
 
@@ -92,7 +93,11 @@ export function AlarmOverlay() {
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFill,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     backgroundColor: 'rgba(20, 16, 14, 0.72)',
     zIndex: 9999,
     justifyContent: 'center',
