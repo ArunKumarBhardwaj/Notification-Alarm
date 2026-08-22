@@ -12,7 +12,8 @@ jobs:
   validate:
     name: Lint & Typecheck
     steps:
-      - run: yarn install --frozen-lockfile
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
       - run: yarn lint
       - run: yarn typecheck
 
