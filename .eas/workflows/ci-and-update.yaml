@@ -11,31 +11,16 @@ on:
 jobs:
   validate:
     name: Lint & Typecheck
-    runs_on: linux-medium
     steps:
-      - name: Checkout code
-        uses: eas/checkout@v1
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Lint
-        run: yarn lint
-
-      - name: Type check
-        run: yarn typecheck
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn typecheck
 
   publish_ota:
     name: Publish Production OTA Update
     needs: [validate]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    runs_on: linux-medium
-    steps:
-      - name: Checkout code
-        uses: eas/checkout@v1
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Publish OTA update to production
-        run: eas update --channel production --environment production --auto
+    type: update
+    params:
+      channel: production
+      message: ${{ github.event.head_commit.message || 'Automated OTA update' }}
