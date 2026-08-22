@@ -28,21 +28,18 @@
   "submit": {
     "internal": {
       "android": {
-        "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
         "track": "internal",
         "releaseStatus": "completed"
       }
     },
     "closed": {
       "android": {
-        "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
         "track": "alpha",
         "releaseStatus": "completed"
       }
     },
     "production": {
       "android": {
-        "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
         "track": "production",
         "releaseStatus": "completed"
       }
