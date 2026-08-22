@@ -87,6 +87,39 @@ function PreferenceRow({
   );
 }
 
+async function checkAndApplyUpdate(setIsCheckingUpdate: (checking: boolean) => void) {
+  if (__DEV__) {
+    Alert.alert('Development Mode', 'OTA updates are disabled in development mode.');
+    return;
+  }
+  try {
+    setIsCheckingUpdate(true);
+    const update = await Updates.checkForUpdateAsync();
+    if (update.isAvailable) {
+      await Updates.fetchUpdateAsync();
+      Alert.alert(
+        'Update Downloaded! 🎉',
+        'A new OTA update has been fetched. Would you like to restart the app to apply it now?',
+        [
+          { text: 'Later', style: 'cancel' },
+          {
+            text: 'Restart Now',
+            onPress: () => {
+              void Updates.reloadAsync();
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert('Up to Date ✨', 'You are running the latest OTA version.');
+    }
+  } catch (error) {
+    Alert.alert('Update Check', error instanceof Error ? error.message : String(error));
+  } finally {
+    setIsCheckingUpdate(false);
+  }
+}
+
 export default function SettingsScreen() {
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const palette = Colors[colorScheme];
@@ -142,39 +175,7 @@ export default function SettingsScreen() {
   };
 
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-
-  const handleCheckUpdate = async () => {
-    if (__DEV__) {
-      Alert.alert('Development Mode', 'OTA updates are disabled in development mode.');
-      return;
-    }
-    try {
-      setIsCheckingUpdate(true);
-      const update = await Updates.checkForUpdateAsync();
-      if (update.isAvailable) {
-        await Updates.fetchUpdateAsync();
-        Alert.alert(
-          'Update Downloaded! 🎉',
-          'A new OTA update has been fetched. Would you like to restart the app to apply it now?',
-          [
-            { text: 'Later', style: 'cancel' },
-            {
-              text: 'Restart Now',
-              onPress: () => {
-                void Updates.reloadAsync();
-              },
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Up to Date ✨', 'You are running the latest OTA version.');
-      }
-    } catch (error) {
-      Alert.alert('Update Check', error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsCheckingUpdate(false);
-    }
-  };
+  const handleCheckUpdate = () => void checkAndApplyUpdate(setIsCheckingUpdate);
 
   return (
     <ScrollView
