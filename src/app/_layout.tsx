@@ -1,32 +1,45 @@
-import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
-import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
-import { PlusJakartaSans_600SemiBold } from '@expo-google-fonts/plus-jakarta-sans/600SemiBold';
-import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
-import { PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold';
-import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import * as SystemUI from 'expo-system-ui';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { PlusJakartaSans_400Regular } from "@expo-google-fonts/plus-jakarta-sans/400Regular";
+import { PlusJakartaSans_500Medium } from "@expo-google-fonts/plus-jakarta-sans/500Medium";
+import { PlusJakartaSans_600SemiBold } from "@expo-google-fonts/plus-jakarta-sans/600SemiBold";
+import { PlusJakartaSans_700Bold } from "@expo-google-fonts/plus-jakarta-sans/700Bold";
+import { PlusJakartaSans_800ExtraBold } from "@expo-google-fonts/plus-jakarta-sans/800ExtraBold";
+import * as Sentry from "@sentry/react-native";
+import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "expo-router/react-navigation";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
+import { useEffect } from "react";
+import "react-native-reanimated";
 
-import { AlarmOverlay } from '@/components/AlarmOverlay';
-import { Colors, Font } from '@/constants/theme';
-import { AlarmProvider } from '@/hooks/alarm-provider';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AlarmOverlay } from "@/components/AlarmOverlay";
+import { Colors, Font } from "@/constants/theme";
+import { AlarmProvider } from "@/hooks/alarm-provider";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+
+Sentry.init({
+  dsn: 'https://7b48da253dc2760b325dbae1a40a85aa@o4511955040468992.ingest.us.sentry.io/4511955048923136',
+  tracesSampleRate: 1.0,
+  _experiments: {
+    profilesSampleRate: 1.0,
+  },
+});
 
 export const unstable_settings = {
-  anchor: 'index',
+  anchor: "index",
 };
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ fade: true, duration: 350 });
 
-export default function RootLayout() {
+function RootLayout() {
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const palette = Colors[colorScheme === "dark" ? "dark" : "light"];
   const [fontsLoaded] = useFonts({
     [Font.regular]: PlusJakartaSans_400Regular,
     [Font.medium]: PlusJakartaSans_500Medium,
@@ -50,9 +63,9 @@ export default function RootLayout() {
   }, [fontsLoaded]);
 
   const navigationTheme = {
-    ...(colorScheme === 'dark' ? DarkTheme : DefaultTheme),
+    ...(colorScheme === "dark" ? DarkTheme : DefaultTheme),
     colors: {
-      ...(colorScheme === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
+      ...(colorScheme === "dark" ? DarkTheme.colors : DefaultTheme.colors),
       primary: palette.tint,
       background: palette.background,
       card: palette.background,
@@ -61,10 +74,10 @@ export default function RootLayout() {
       notification: palette.danger,
     },
     fonts: {
-      regular: { fontFamily: Font.regular, fontWeight: '400' as const },
-      medium: { fontFamily: Font.medium, fontWeight: '400' as const },
-      bold: { fontFamily: Font.bold, fontWeight: '400' as const },
-      heavy: { fontFamily: Font.extrabold, fontWeight: '400' as const },
+      regular: { fontFamily: Font.regular, fontWeight: "400" as const },
+      medium: { fontFamily: Font.medium, fontWeight: "400" as const },
+      bold: { fontFamily: Font.bold, fontWeight: "400" as const },
+      heavy: { fontFamily: Font.extrabold, fontWeight: "400" as const },
     },
   };
 
@@ -82,12 +95,17 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="index" />
-          <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
+          <Stack.Screen
+            name="onboarding"
+            options={{ animation: "fade", gestureEnabled: false }}
+          />
           <Stack.Screen name="(tabs)" />
         </Stack>
         <AlarmOverlay />
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       </ThemeProvider>
     </AlarmProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

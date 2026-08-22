@@ -1,6 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
+import * as Sentry from '@sentry/react-native';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
 import {
@@ -223,6 +224,17 @@ export default function SettingsScreen() {
             subtitle="Fetch and apply latest JS update immediately"
             palette={palette}
             onPress={isCheckingUpdate ? undefined : () => void handleCheckUpdate()}
+          />
+          <PreferenceRow
+            divider
+            icon="bug-report"
+            title="Test Sentry Event"
+            subtitle="Send a test diagnostic message to Sentry"
+            palette={palette}
+            onPress={() => {
+              Sentry.captureMessage('Sentry diagnostic test from Alertify Settings Screen!');
+              Alert.alert('Sentry Event Sent! 🚀', 'Check your Sentry dashboard (Issues tab) to view this test event.');
+            }}
           />
         </View>
       </View>

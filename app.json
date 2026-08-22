@@ -68,6 +68,14 @@
             "enableShrinkResourcesInReleaseBuilds": true
           }
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "my-org-wg",
+          "project": "notification-alarm",
+          "url": "https://sentry.io/"
+        }
       ]
     ],
     "experiments": {
