@@ -1,0 +1,32 @@
+name: Build & Submit to Google Play Store
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on git tags like v1.0.1
+
+jobs:
+  validate:
+    name: Lint & Typecheck
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - run: yarn lint
+      - run: yarn typecheck
+
+  build_android:
+    name: Build Android App Bundle (AAB)
+    needs: [validate]
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  submit_internal:
+    name: Submit to Internal Testing
+    needs: [build_android]
+    type: submit
+    params:
+      platform: android
+      profile: internal
+      releaseNotes: ${{ github.event.head_commit.message || 'Bug fixes and improvements' }}

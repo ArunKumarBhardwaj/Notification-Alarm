@@ -30,21 +30,21 @@
       "android": {
         "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
         "track": "internal",
-        "releaseStatus": "draft"
+        "releaseStatus": "completed"
       }
     },
     "closed": {
       "android": {
         "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
         "track": "alpha",
-        "releaseStatus": "draft"
+        "releaseStatus": "completed"
       }
     },
     "production": {
       "android": {
         "serviceAccountKeyPath": "./notification-alarm-505716-acd28887fea6.json",
         "track": "production",
-        "releaseStatus": "draft"
+        "releaseStatus": "completed"
       }
     }
   }
