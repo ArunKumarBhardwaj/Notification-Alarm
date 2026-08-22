@@ -64,24 +64,32 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
 
   return (
     <View
+      pointerEvents="box-none"
       style={[
         styles.wrapper,
         {
           paddingBottom: Math.max(insets.bottom, Space.md),
-          backgroundColor: palette.background,
         },
       ]}
     >
       <View
         onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
-        style={[styles.bar, { backgroundColor: palette.chrome }]}
+        style={[
+          styles.bar,
+          {
+            backgroundColor: palette.surface,
+            borderColor: palette.border,
+            shadowColor: '#000',
+            shadowOpacity: colorScheme === 'dark' ? 0.35 : 0.08,
+          },
+        ]}
       >
         {slotWidth > 0 ? (
           <Animated.View
             pointerEvents="none"
             style={[
               styles.pill,
-              { width: slotWidth, backgroundColor: palette.tint, transform: [{ translateX }] },
+              { width: slotWidth, backgroundColor: palette.primarySoft, transform: [{ translateX }] },
             ]}
           />
         ) : null}
@@ -120,11 +128,17 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
               <MaterialIcons
                 name={focused ? icons.active : icons.inactive}
                 size={22}
-                color={focused ? palette.onPrimary : palette.chromeMuted}
+                color={focused ? palette.tint : palette.muted}
               />
               <Text
                 numberOfLines={1}
-                style={[styles.label, { color: focused ? palette.onPrimary : palette.chromeMuted }]}
+                style={[
+                  styles.label,
+                  {
+                    color: focused ? palette.tint : palette.muted,
+                    fontFamily: focused ? 'JakartaBold' : 'JakartaMedium',
+                  },
+                ]}
               >
                 {label}
               </Text>
@@ -138,8 +152,12 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
 
 const styles = StyleSheet.create({
   wrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: Space.lg,
-    paddingTop: Space.sm,
+    paddingTop: Space.xs,
   },
   bar: {
     flexDirection: 'row',
@@ -147,8 +165,10 @@ const styles = StyleSheet.create({
     height: BAR_HEIGHT,
     borderRadius: Radius.pill,
     paddingHorizontal: PILL_INSET,
-    overflow: 'hidden',
-    boxShadow: '0 6px 12px rgba(0, 0, 0, 0.18)',
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 16,
+    elevation: 8,
   },
   pill: {
     position: 'absolute',

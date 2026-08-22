@@ -17,6 +17,8 @@ google-service-account.json
 *.iam.gserviceaccount.com.json
 
 # Android build files
+.gradle/
+**/.gradle/
 android/app/build/
 android/build/
 **/android/build/

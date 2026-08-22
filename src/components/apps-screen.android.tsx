@@ -11,6 +11,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -351,19 +352,21 @@ export default function AppsScreen() {
 
   const listSize = { width, height };
 
-  const emptyTitle = deferredSearch
-    ? 'No matching apps'
-    : watchingOnly
-      ? 'Nothing watched yet'
-      : refreshing
-        ? 'Loading apps'
+  const isLoading = refreshing && apps.length === 0;
+
+  const emptyTitle = isLoading
+    ? 'Loading apps'
+    : deferredSearch
+      ? 'No matching apps'
+      : watchingOnly
+        ? 'Nothing watched yet'
         : 'No apps found';
-  const emptyBody = deferredSearch
-    ? 'Try a different name or package.'
-    : watchingOnly
-      ? 'Switch to All apps and tap the ones that should wake you.'
-      : refreshing
-        ? 'Installed apps will appear here in a moment.'
+  const emptyBody = isLoading
+    ? 'Installed apps will appear here in a moment.'
+    : deferredSearch
+      ? 'Try a different name or package.'
+      : watchingOnly
+        ? 'Switch to All apps and tap the ones that should wake you.'
         : 'Launcher apps appear here. Anything that notifies you is added automatically.';
 
   return (
@@ -412,9 +415,19 @@ export default function AppsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <View style={[styles.emptyGlyph, { backgroundColor: palette.surfaceContainer }]}>
-              <MaterialIcons name="apps" size={28} color={palette.muted} />
-            </View>
+            {isLoading ? (
+              <View style={[styles.emptyGlyph, { backgroundColor: palette.primarySoft }]}>
+                <ActivityIndicator size="small" color={palette.tint} />
+              </View>
+            ) : (
+              <View style={[styles.emptyGlyph, { backgroundColor: palette.surfaceContainer }]}>
+                <MaterialIcons
+                  name={deferredSearch ? 'search-off' : watchingOnly ? 'notifications-off' : 'apps'}
+                  size={28}
+                  color={palette.muted}
+                />
+              </View>
+            )}
             <Text style={[styles.emptyTitle, { color: palette.text }]}>{emptyTitle}</Text>
             <Text style={[styles.emptyBody, { color: palette.muted }]}>{emptyBody}</Text>
           </View>

@@ -141,6 +141,41 @@ export default function SettingsScreen() {
     );
   };
 
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
+  const handleCheckUpdate = async () => {
+    if (__DEV__) {
+      Alert.alert('Development Mode', 'OTA updates are disabled in development mode.');
+      return;
+    }
+    try {
+      setIsCheckingUpdate(true);
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        Alert.alert(
+          'Update Downloaded! 🎉',
+          'A new OTA update has been fetched. Would you like to restart the app to apply it now?',
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Restart Now',
+              onPress: () => {
+                void Updates.reloadAsync();
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Up to Date ✨', 'You are running the latest OTA version.');
+      }
+    } catch (error) {
+      Alert.alert('Update Check', error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: palette.background }}
@@ -150,16 +185,45 @@ export default function SettingsScreen() {
       <View
         style={[
           styles.intro,
-          { backgroundColor: palette.chrome, borderColor: palette.chrome },
+          { backgroundColor: palette.surface, borderColor: palette.border },
         ]}
       >
-        <View style={[styles.introIcon, { backgroundColor: palette.tint }]}>
-          <MaterialIcons name="tune" size={26} color={palette.onPrimary} />
+        <View style={[styles.introIcon, { backgroundColor: palette.primarySoft }]}>
+          <MaterialIcons name="tune" size={26} color={palette.tint} />
         </View>
-        <Text style={[styles.introTitle, { color: palette.onChrome }]}>Make it yours</Text>
-        <Text style={[styles.introBody, { color: palette.chromeMuted }]}>
+        <Text style={[styles.introTitle, { color: palette.text }]}>Make it yours</Text>
+        <Text style={[styles.introBody, { color: palette.muted }]}>
           Control when alarms can interrupt you and how they get your attention.
         </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: palette.muted }]}>Over-The-Air (OTA) Updates</Text>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: palette.surface, borderColor: palette.border },
+          ]}
+        >
+          <PreferenceRow
+            icon="bolt"
+            title="OTA Test: JS Live Update ✅"
+            subtitle={
+              Updates.isEmbeddedLaunch
+                ? 'Running embedded Play Store binary'
+                : `Active OTA Update: ${Updates.updateId ? Updates.updateId.slice(0, 8) : 'Running Latest'}`
+            }
+            palette={palette}
+          />
+          <PreferenceRow
+            divider
+            icon="sync"
+            title={isCheckingUpdate ? 'Checking for updates...' : 'Check for OTA Update'}
+            subtitle="Fetch and apply latest JS update immediately"
+            palette={palette}
+            onPress={isCheckingUpdate ? undefined : () => void handleCheckUpdate()}
+          />
+        </View>
       </View>
 
       <View style={styles.section}>

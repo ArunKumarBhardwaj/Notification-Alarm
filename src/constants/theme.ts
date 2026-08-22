@@ -173,7 +173,7 @@ export const Motion = {
 export const TabBar = {
   height: 62,
   inset: 6,
-  clearance: 62 + Space.md * 2,
+  clearance: 62 + Space.xl * 2,
 };
 
 export type ThemeColors = typeof Colors.light;
