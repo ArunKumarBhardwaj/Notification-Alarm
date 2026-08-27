@@ -13,7 +13,6 @@
     "icons": "node scripts/generate-icons.mjs && expo prebuild -p android"
   },
   "dependencies": {
-    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/material-symbols": "^0.1.1",
     "@expo/ui": "~57.0.10",
     "@expo/vector-icons": "^15.0.3",

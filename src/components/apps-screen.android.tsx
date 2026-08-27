@@ -1,6 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LegendList } from '@legendapp/list/react-native';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import React, {
@@ -28,6 +27,7 @@ import {
   type ThemeColors,
 } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import * as Haptics from '@/lib/haptics';
 import { getSelectedApps, saveSelectedApps } from '@/lib/storage';
 import {
   AppInfo,

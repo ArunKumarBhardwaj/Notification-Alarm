@@ -59,9 +59,10 @@ export const Colors = {
 };
 
 /**
- * Plus Jakarta Sans, loaded at runtime in the root layout. Android does not
- * synthesize weights for custom families, so every weight is its own family and
- * text styles set `fontFamily` instead of `fontWeight`.
+ * Plus Jakarta Sans, embedded at build time via the expo-font config plugin.
+ * Android does not synthesize weights for custom families, so every weight is
+ * its own family (matching the font file name) and text styles set
+ * `fontFamily` instead of `fontWeight`.
  */
 export const Font = {
   regular: 'Jakarta',

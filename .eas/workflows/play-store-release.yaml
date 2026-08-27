@@ -22,6 +22,9 @@ jobs:
       platform: android
       profile: production
 
+  # Tag releases go to Internal Testing. Promote the same AAB later with:
+  #   eas submit --profile closed --latest
+  #   eas submit --profile production --latest
   submit_internal:
     name: Submit to Internal Testing
     needs: [build_android]
@@ -29,3 +32,21 @@ jobs:
     params:
       build_id: ${{ needs.build_android.outputs.build_id }}
       profile: internal
+
+  # Uncomment to also push the same build to closed testing on every tag:
+  # submit_closed:
+  #   name: Submit to Closed Testing
+  #   needs: [build_android]
+  #   type: submit
+  #   params:
+  #     build_id: ${{ needs.build_android.outputs.build_id }}
+  #     profile: closed
+
+  # Uncomment to also push the same build to production on every tag:
+  # submit_production:
+  #   name: Submit to Production
+  #   needs: [build_android]
+  #   type: submit
+  #   params:
+  #     build_id: ${{ needs.build_android.outputs.build_id }}
+  #     profile: production

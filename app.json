@@ -53,7 +53,18 @@
           }
         }
       ],
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Jakarta.ttf",
+            "./assets/fonts/JakartaMedium.ttf",
+            "./assets/fonts/JakartaSemiBold.ttf",
+            "./assets/fonts/JakartaBold.ttf",
+            "./assets/fonts/JakartaExtraBold.ttf"
+          ]
+        }
+      ],
       "expo-image",
       "expo-web-browser",
       "expo-status-bar",

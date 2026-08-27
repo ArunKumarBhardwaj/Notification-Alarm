@@ -192,7 +192,7 @@ export default function OnboardingScreen() {
 
   const finish = () => {
     completeOnboarding();
-    router.replace('/apps');
+    router.replace('/setup');
   };
 
   const advance = () => {

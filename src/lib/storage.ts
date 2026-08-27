@@ -18,6 +18,8 @@ export const StorageKeys = {
   ONBOARDED: 'alertify_onboarded',
   QUIET_HOURS_ENABLED: 'alertify_quiet_hours_enabled',
   VIBRATION_ENABLED: 'alertify_vibration_enabled',
+  HAPTICS_ENABLED: 'alertify_haptics_enabled',
+  SETUP_SKIPPED: 'alertify_setup_skipped',
 };
 
 const syncToNative = (key: string, value: string) => {
@@ -73,6 +75,14 @@ export const completeOnboarding = () => {
   storage.set(StorageKeys.ONBOARDED, 'true');
 };
 
+export const hasSkippedSetup = (): boolean => {
+  return storage.getString(StorageKeys.SETUP_SKIPPED) === 'true';
+};
+
+export const skipSetup = () => {
+  storage.set(StorageKeys.SETUP_SKIPPED, 'true');
+};
+
 export const isMonitoringEnabled = (): boolean => {
   const val = storage.getString(StorageKeys.MONITORING_ENABLED);
   return val !== 'false';
@@ -102,6 +112,14 @@ export const setVibrationEnabled = (enabled: boolean) => {
   const val = enabled ? 'true' : 'false';
   storage.set(StorageKeys.VIBRATION_ENABLED, val);
   syncToNative('vibration_enabled', val);
+};
+
+export const isHapticsEnabled = (): boolean => {
+  return storage.getString(StorageKeys.HAPTICS_ENABLED) !== 'false';
+};
+
+export const setHapticsEnabled = (enabled: boolean) => {
+  storage.set(StorageKeys.HAPTICS_ENABLED, enabled ? 'true' : 'false');
 };
 
 export interface HistoryItem {

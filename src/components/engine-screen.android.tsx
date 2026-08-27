@@ -1,7 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as DocumentPicker from 'expo-document-picker';
-import * as Haptics from 'expo-haptics';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,10 +23,13 @@ import {
   type ThemeColors,
 } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import * as Haptics from '@/lib/haptics';
+import { isSetupReady } from '@/lib/setup-checklist';
 import {
   getAlarmSoundUri,
   getHistory,
   getSelectedApps,
+  hasSkippedSetup,
   HistoryItem,
   isMonitoringEnabled,
   saveAlarmSoundFromPicker,
@@ -149,6 +151,7 @@ function StatusPill({
 }
 
 export default function EngineScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const palette = Colors[colorScheme];
   const [permission, setPermission] = useState(() => hasPermission());
@@ -216,6 +219,7 @@ export default function EngineScreen() {
 
   const setupReady = permission && canPost && batteryUnrestricted;
   const active = monitoring && setupReady;
+  const showSetupBanner = hasSkippedSetup() && !isSetupReady();
   const statusTitle = !monitoring
     ? 'Monitoring off'
     : setupReady
@@ -235,6 +239,36 @@ export default function EngineScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      {showSetupBanner ? (
+        <Pressable
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/setup');
+          }}
+          android_ripple={{ color: `${palette.tint}18` }}
+          accessibilityRole="button"
+          accessibilityLabel="Finish setup"
+          style={[
+            styles.setupBanner,
+            {
+              backgroundColor: palette.primarySoft,
+              borderColor: `${palette.tint}33`,
+            },
+          ]}
+        >
+          <View style={[styles.setupBannerIcon, { backgroundColor: palette.tint }]}>
+            <MaterialIcons name="checklist" size={20} color={palette.onPrimary} />
+          </View>
+          <View style={styles.rowText}>
+            <Text style={[styles.rowTitle, { color: palette.text }]}>Finish setup</Text>
+            <Text style={[styles.rowSubtitle, { color: palette.muted }]}>
+              Grant notification access and unrestricted battery.
+            </Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={22} color={palette.tint} />
+        </Pressable>
+      ) : null}
+
       <View
         style={[
           styles.hero,
@@ -446,6 +480,21 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1,
     gap: Space.xs,
+  },
+  setupBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Space.md,
+    padding: Space.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+  },
+  setupBannerIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroTop: {
     flexDirection: 'row',

@@ -1,10 +1,4 @@
-import { PlusJakartaSans_400Regular } from "@expo-google-fonts/plus-jakarta-sans/400Regular";
-import { PlusJakartaSans_500Medium } from "@expo-google-fonts/plus-jakarta-sans/500Medium";
-import { PlusJakartaSans_600SemiBold } from "@expo-google-fonts/plus-jakarta-sans/600SemiBold";
-import { PlusJakartaSans_700Bold } from "@expo-google-fonts/plus-jakarta-sans/700Bold";
-import { PlusJakartaSans_800ExtraBold } from "@expo-google-fonts/plus-jakarta-sans/800ExtraBold";
 import * as Sentry from "@sentry/react-native";
-import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import {
   DarkTheme,
@@ -14,6 +8,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
+import * as Updates from "expo-updates";
 import { useEffect } from "react";
 import "react-native-reanimated";
 
@@ -24,11 +19,13 @@ import { AlarmProvider } from "@/hooks/alarm-provider";
 import { DialogProvider } from "@/hooks/dialog-provider";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+const isStoreRelease = !__DEV__ && Updates.channel === "production";
+
 Sentry.init({
   dsn: 'https://7b48da253dc2760b325dbae1a40a85aa@o4511955040468992.ingest.us.sentry.io/4511955048923136',
-  tracesSampleRate: 1.0,
+  tracesSampleRate: isStoreRelease ? 0.2 : 1.0,
   _experiments: {
-    profilesSampleRate: 1.0,
+    profilesSampleRate: isStoreRelease ? 0.1 : 1.0,
   },
 });
 
@@ -36,33 +33,24 @@ export const unstable_settings = {
   anchor: "index",
 };
 
+SplashScreen.setOptions({ fade: true, duration: 300 });
 SplashScreen.preventAutoHideAsync().catch(() => {});
-SplashScreen.setOptions({ fade: true, duration: 350 });
 
 function RootLayout() {
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme === "dark" ? "dark" : "light"];
-  const [fontsLoaded] = useFonts({
-    [Font.regular]: PlusJakartaSans_400Regular,
-    [Font.medium]: PlusJakartaSans_500Medium,
-    [Font.semibold]: PlusJakartaSans_600SemiBold,
-    [Font.bold]: PlusJakartaSans_700Bold,
-    [Font.extrabold]: PlusJakartaSans_800ExtraBold,
-  });
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(palette.background);
   }, [palette.background]);
 
   useEffect(() => {
-    if (!fontsLoaded) return;
-    // Let the navigator paint one frame first, so the splash fades into an
-    // identical background instead of swapping colors mid-animation.
+    // Fonts are embedded at build time, so hide after the first paint.
     const frame = requestAnimationFrame(() => {
       SplashScreen.hideAsync().catch(() => {});
     });
     return () => cancelAnimationFrame(frame);
-  }, [fontsLoaded]);
+  }, []);
 
   const navigationTheme = {
     ...(colorScheme === "dark" ? DarkTheme : DefaultTheme),
@@ -83,10 +71,6 @@ function RootLayout() {
     },
   };
 
-  // The splash is still up until fonts resolve, so rendering nothing here just
-  // avoids a first paint in the fallback font.
-  if (!fontsLoaded) return null;
-
   return (
     <DialogProvider>
       <AlarmProvider>
@@ -100,6 +84,10 @@ function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen
               name="onboarding"
+              options={{ animation: "fade", gestureEnabled: false }}
+            />
+            <Stack.Screen
+              name="setup"
               options={{ animation: "fade", gestureEnabled: false }}
             />
             <Stack.Screen name="(tabs)" />

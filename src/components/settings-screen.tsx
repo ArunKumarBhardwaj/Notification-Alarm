@@ -1,6 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Constants from 'expo-constants';
-import * as Haptics from 'expo-haptics';
 import * as Sentry from '@sentry/react-native';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
@@ -23,11 +22,15 @@ import {
   type ThemeColors,
 } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { showDevTools } from '@/lib/dev-tools';
+import * as Haptics from '@/lib/haptics';
 import {
   clearHistory,
   getHistory,
+  isHapticsEnabled,
   isQuietHoursEnabled,
   isVibrationEnabled,
+  setHapticsEnabled,
   setQuietHoursEnabled,
   setVibrationEnabled,
 } from '@/lib/storage';
@@ -144,17 +147,26 @@ export default function SettingsScreen() {
   const { showDialog } = useAppDialog();
   const [quietHours, setQuietHours] = useState(() => isQuietHoursEnabled());
   const [vibration, setVibration] = useState(() => isVibrationEnabled());
+  const [haptics, setHaptics] = useState(() => isHapticsEnabled());
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const devTools = showDevTools();
 
   const toggleQuietHours = (value: boolean) => {
     setQuietHours(value);
     setQuietHoursEnabled(value);
-    Haptics.selectionAsync();
+    void Haptics.selectionAsync();
   };
 
   const toggleVibration = (value: boolean) => {
     setVibration(value);
     setVibrationEnabled(value);
-    Haptics.selectionAsync();
+    void Haptics.selectionAsync();
+  };
+
+  const toggleHaptics = (value: boolean) => {
+    setHaptics(value);
+    setHapticsEnabled(value);
+    if (value) void Haptics.selectionForcedAsync();
   };
 
   const shareHistory = async () => {
@@ -195,7 +207,6 @@ export default function SettingsScreen() {
     });
   };
 
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const handleCheckUpdate = () => void checkAndApplyUpdate(setIsCheckingUpdate, showDialog);
 
   return (
@@ -219,49 +230,55 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: palette.muted }]}>Over-The-Air (OTA) Updates</Text>
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: palette.surface, borderColor: palette.border },
-          ]}
-        >
-          <PreferenceRow
-            icon="bolt"
-            title="OTA Test: JS Live Update ✅"
-            subtitle={
-              Updates.isEmbeddedLaunch
-                ? 'Running embedded Play Store binary'
-                : `Active OTA Update: ${Updates.updateId ? Updates.updateId.slice(0, 8) : 'Running Latest'}`
-            }
-            palette={palette}
-          />
-          <PreferenceRow
-            divider
-            icon="sync"
-            title={isCheckingUpdate ? 'Checking for updates...' : 'Check for OTA Update'}
-            subtitle="Fetch and apply latest JS update immediately"
-            palette={palette}
-            onPress={isCheckingUpdate ? undefined : () => void handleCheckUpdate()}
-          />
-          <PreferenceRow
-            divider
-            icon="bug-report"
-            title="Test Sentry Event"
-            subtitle="Send a test diagnostic message to Sentry"
-            palette={palette}
-            onPress={() => {
-              Sentry.captureMessage('Sentry diagnostic test from Notification Alarm Settings Screen!');
-              showDialog({
-                title: 'Sentry Event Sent! 🚀',
-                message: 'Check your Sentry dashboard (Issues tab) to view this test event.',
-                actions: [{ text: 'OK' }],
-              });
-            }}
-          />
+      {devTools ? (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: palette.muted }]}>
+            Developer
+          </Text>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: palette.surface, borderColor: palette.border },
+            ]}
+          >
+            <PreferenceRow
+              icon="bolt"
+              title="OTA status"
+              subtitle={
+                Updates.isEmbeddedLaunch
+                  ? 'Running embedded Play Store binary'
+                  : `Active OTA: ${Updates.updateId ? Updates.updateId.slice(0, 8) : 'latest'}`
+              }
+              palette={palette}
+            />
+            <PreferenceRow
+              divider
+              icon="sync"
+              title={isCheckingUpdate ? 'Checking for updates...' : 'Check for OTA Update'}
+              subtitle="Fetch and apply latest JS update immediately"
+              palette={palette}
+              onPress={isCheckingUpdate ? undefined : () => void handleCheckUpdate()}
+            />
+            <PreferenceRow
+              divider
+              icon="bug-report"
+              title="Test Sentry Event"
+              subtitle="Send a test diagnostic message to Sentry"
+              palette={palette}
+              onPress={() => {
+                Sentry.captureMessage(
+                  'Sentry diagnostic test from Notification Alarm Settings Screen!'
+                );
+                showDialog({
+                  title: 'Sentry Event Sent',
+                  message: 'Check your Sentry dashboard (Issues tab) to view this test event.',
+                  actions: [{ text: 'OK' }],
+                });
+              }}
+            />
+          </View>
         </View>
-      </View>
+      ) : null}
 
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.muted }]}>Alarm preferences</Text>
@@ -295,6 +312,20 @@ export default function SettingsScreen() {
                 value={vibration}
                 onValueChange={toggleVibration}
                 accessibilityLabel="Vibration"
+              />
+            }
+          />
+          <PreferenceRow
+            divider
+            icon="touch-app"
+            title="Touch feedback"
+            subtitle="Haptic taps when you press buttons and tabs"
+            palette={palette}
+            trailing={
+              <SwitchToggle
+                value={haptics}
+                onValueChange={toggleHaptics}
+                accessibilityLabel="Touch feedback"
               />
             }
           />
@@ -340,7 +371,7 @@ export default function SettingsScreen() {
             icon="info-outline"
             title="Notification Alarm"
             subtitle={`Version ${version}${build ? ` (${build})` : ''}${
-              Updates.channel ? ` · ${Updates.channel}` : ''
+              devTools && Updates.channel ? ` · ${Updates.channel}` : ''
             }`}
             palette={palette}
           />
